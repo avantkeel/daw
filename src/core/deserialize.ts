@@ -1,3 +1,4 @@
+import { trackChannelsFor, type ChannelCount } from './types';
 import { parseXml, type XmlElement } from './xml';
 
 /** What a project file says about a source audio file. */
@@ -22,6 +23,7 @@ export interface ParsedClip {
 
 export interface ParsedTrack {
   name: string;
+  channels: ChannelCount;
   volume: number;
   muted: boolean;
   clips: ParsedClip[];
@@ -60,6 +62,8 @@ export function parseProject(xml: string): ParsedProject {
     const clipEls = child(lanesByTrack.get(t.attrs.id ?? ''), 'Clips')?.children ?? [];
     return {
       name: t.attrs.name ?? 'Track',
+      // Files written before tracks had a channel count always said 2.
+      channels: trackChannelsFor(num(channel?.attrs.audioChannels, 2)),
       volume: num(child(channel, 'Volume')?.attrs.value, 1),
       muted: child(channel, 'Mute')?.attrs.value === 'true',
       clips: clipEls.filter((c) => c.tag === 'Clip').flatMap((c) => parseClip(c) ?? []),

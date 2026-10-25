@@ -13,6 +13,7 @@ const TRACK_H = 96;
 const TITLE_H = 16;
 const EDGE = 6;
 const HANDLE = 4;
+const CH_BTN_W = 52;
 
 const C = {
   bg: '#1e1e1e',
@@ -177,6 +178,8 @@ export class Timeline {
       const by = RULER_H + ti * TRACK_H + 10;
       if (track && x >= bx && x <= bx + 22 && y >= by && y <= by + 20) {
         this.project.setMuted(track.id, !track.muted);
+      } else if (track && this.inChannelButton(x, y, ti)) {
+        this.project.setChannels(track.id, track.channels === 1 ? 2 : 1);
       }
       return;
     }
@@ -196,6 +199,12 @@ export class Timeline {
       };
     }
     this.dirty = true;
+  }
+
+  /** The Mono/Stereo toggle in the bottom-left of a track header. */
+  private inChannelButton(x: number, y: number, ti: number): boolean {
+    const by = RULER_H + ti * TRACK_H + TRACK_H - 28;
+    return x >= 10 && x <= 10 + CH_BTN_W && y >= by && y <= by + 18;
   }
 
   private onDrag(e: MouseEvent): void {
@@ -362,6 +371,13 @@ export class Timeline {
       g.fillStyle = t.muted ? C.white : C.dim;
       g.font = '11px system-ui, sans-serif';
       g.fillText('M', bx + 7, by + 14);
+
+      // Mono / Stereo toggle
+      const cy = y + TRACK_H - 28;
+      g.strokeStyle = C.border;
+      g.strokeRect(10.5, cy + 0.5, CH_BTN_W - 1, 17);
+      g.fillStyle = C.dim;
+      g.fillText(t.channels === 1 ? 'Mono' : 'Stereo', 17, cy + 13);
     });
   }
 

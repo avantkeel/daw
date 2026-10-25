@@ -1,5 +1,11 @@
 export type Id = string;
 
+/** A track is either mono (1) or stereo (2). */
+export type ChannelCount = 1 | 2;
+
+/** Mono sources give mono tracks; stereo and anything wider (5.1, ...) give stereo tracks. */
+export const trackChannelsFor = (sourceChannels: number): ChannelCount => (sourceChannels <= 1 ? 1 : 2);
+
 export interface Clip {
   id: Id;
   assetId: Id;
@@ -19,6 +25,7 @@ export interface Clip {
 export interface Track {
   id: Id;
   name: string;
+  channels: ChannelCount;
   volume: number;
   muted: boolean;
   clips: Clip[];
@@ -40,6 +47,7 @@ export type ClipData = Omit<Clip, 'id'>;
 
 export interface TrackData {
   name: string;
+  channels: ChannelCount;
   volume: number;
   muted: boolean;
   clips: ClipData[];

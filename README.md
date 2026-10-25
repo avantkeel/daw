@@ -7,7 +7,9 @@ Drag audio in, move / trim / fade clips, play, export WAV. No MIDI, no plugins.
     pnpm typecheck
 
 ## Controls
-- Drop audio files on the timeline (on a lane = that track at that time, elsewhere = new track)
+- Drop audio files on the timeline. Mono files make mono tracks, stereo files make stereo tracks.
+  Dropped on a lane with the same layout = that track at that time; on a lane with a different layout or elsewhere = new track
+- Click the Mono/Stereo label in a track header to switch that track's layout
 - Drag clip body: move (also between tracks)
 - Drag clip left/right edge: trim
 - Drag the white square handles at the top corners: fade in / fade out

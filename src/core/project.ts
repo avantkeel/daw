@@ -1,5 +1,5 @@
 import { Emitter } from './emitter';
-import type { AssetRef, Clip, Id, Track, TrackData } from './types';
+import type { AssetRef, ChannelCount, Clip, Id, Track, TrackData } from './types';
 
 const MIN_CLIP = 0.01;
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -30,6 +30,7 @@ export class Project {
     this.tracks = tracks.map((t) => ({
       id: uid('track'),
       name: t.name,
+      channels: t.channels,
       volume: t.volume,
       muted: t.muted,
       clips: t.clips.map((c) => ({ ...c, id: uid('clip') })),
@@ -59,11 +60,18 @@ export class Project {
     return undefined;
   }
 
-  addTrack(name = `Track ${this.tracks.length + 1}`): Track {
-    const track: Track = { id: uid('track'), name, volume: 1, muted: false, clips: [] };
+  addTrack(name = `Track ${this.tracks.length + 1}`, channels: ChannelCount = 2): Track {
+    const track: Track = { id: uid('track'), name, channels, volume: 1, muted: false, clips: [] };
     this.tracks.push(track);
     this.changed.emit();
     return track;
+  }
+
+  setChannels(trackId: Id, channels: ChannelCount): void {
+    const t = this.tracks.find((x) => x.id === trackId);
+    if (!t || t.channels === channels) return;
+    t.channels = channels;
+    this.changed.emit();
   }
 
   setMuted(trackId: Id, muted: boolean): void {

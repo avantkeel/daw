@@ -65,6 +65,9 @@ Electron must stay removable by deleting `src/platform/electron/`, one line in
 
 ## Data model notes
 
+- A `Track` has `channels: 1 | 2` (mono or stereo). Importing a file picks it via `trackChannelsFor(asset.channels)`
+  (mono -> 1, anything wider -> 2). `audio/scheduler.ts` forces the track's gain node to that layout
+  (`channelCountMode: 'explicit'`), so clips are up/downmixed to match the track, in playback and export alike.
 - Times are in seconds. A `Clip` has `start` (timeline position), `offset` (in-point in the source),
   `duration` (length on timeline), `sourceDuration`, `fadeIn`, `fadeOut`.
 - Trimming changes `start/offset/duration` and never touches the audio data.
@@ -91,6 +94,7 @@ Electron must stay removable by deleting `src/platform/electron/`, one line in
 - Opening replaces the current project (`Project.load`), re-reads each referenced audio file by absolute
   path via `Platform.readFile`, and decodes it. Files that can't be found become silent placeholder
   assets, so the clips and their data survive a re-save.
+- Track channel count is stored as `audioChannels` on the track's `<Channel>`; files without a usable value load as stereo.
 - When adding fields to `Project`/`Clip`/`Track`, update `core/serialize.ts`, `core/deserialize.ts`
   and `ProjectFiles.open`, and extend the round trip.
 - Electron's `readFile` IPC only reads audio extensions, so the renderer can't read arbitrary files.

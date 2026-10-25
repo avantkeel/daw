@@ -28,6 +28,11 @@ export function scheduleProject(
     if (track.muted) continue;
     const trackGain = ctx.createGain();
     trackGain.gain.value = track.volume;
+    // Fixes the track's channel layout: stereo clips on a mono track are downmixed,
+    // mono clips on a stereo track are centred. Mono tracks reach the master as dual-mono.
+    trackGain.channelCount = track.channels;
+    trackGain.channelCountMode = 'explicit';
+    trackGain.channelInterpretation = 'speakers';
     trackGain.connect(destination);
     nodes.push(trackGain);
 

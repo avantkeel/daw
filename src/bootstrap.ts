@@ -1,6 +1,7 @@
 import { AudioEngine } from './audio/engine';
 import { renderToWav } from './audio/exporter';
 import { Project } from './core/project';
+import { trackChannelsFor } from './core/types';
 import { byId } from './ui/dom';
 import { attachFileDrop } from './ui/dropzone';
 import { Timeline } from './ui/timeline';
@@ -82,15 +83,21 @@ export function bootstrap(): void {
           channels: asset.channels,
           path: platform.getFilePath(file),
         });
-        const useExisting = first && where.trackId;
-        const trackId = useExisting ? where.trackId! : project.addTrack(file.name.replace(/\.[^.]+$/, '')).id;
+        // Dropped on a lane: use that track if its channel layout matches the file,
+        // otherwise (or when dropped elsewhere) make a new mono/stereo track to match.
+        const channels = trackChannelsFor(asset.channels);
+        const target = first && where.trackId ? project.getTracks().find((t) => t.id === where.trackId) : undefined;
+        const trackId =
+          target && target.channels === channels
+            ? target.id
+            : project.addTrack(file.name.replace(/\.[^.]+$/, ''), channels).id;
         project.addClip(trackId, {
           assetId: asset.assetId,
           name: asset.name,
           sourceDuration: asset.duration,
-          start: useExisting ? where.time : 0,
+          start: target ? where.time : 0,
         });
-        toolbar.setStatus(`Added ${asset.name}`);
+        toolbar.setStatus(`Added ${asset.name} (${channels === 1 ? 'mono' : 'stereo'})`);
       } catch {
         toolbar.setStatus(`Could not decode ${file.name}`);
       }
