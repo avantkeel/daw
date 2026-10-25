@@ -90,6 +90,10 @@ Electron must stay removable by deleting `src/platform/electron/`, one line in
 - `audio/scheduler.ts` is shared by live playback and offline export, so playback and export
   must always sound identical. Don't duplicate its logic.
 
+- `core/types.ts` has `defaultTemplate()` (two stereo, two mono tracks). `bootstrap` and `ProjectFiles.newProject` load it.
+- `Project.renameTrack`, `renameClip`, `moveTrack`, `setVolume` are normal undoable edits. Empty names are ignored.
+- `ui/textedit.ts` (inline rename input) and `ui/contextmenu.ts` (right-click menu) are the small UI helpers the timeline and bootstrap use.
+
 ## Project files
 
 - Saving creates a folder named after the project, containing `<name>.audioproject`

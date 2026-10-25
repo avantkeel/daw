@@ -3,18 +3,22 @@ import type { Project } from '../core/project';
 import type { Clip, Id } from '../core/types';
 import { askReplaceClips } from './dialog';
 import { formatRuler } from './format';
+import { editText } from './textedit';
 
 export interface PeaksSource {
   getPeaks(assetId: Id): Peaks | undefined;
 }
 
-const HEADER_W = 140;
+const HEADER_W = 200;
 const RULER_H = 26;
-const TRACK_H = 96;
+const TRACK_H = 72;
 const TITLE_H = 16;
 const EDGE = 6;
 const HANDLE = 4;
 const CH_BTN_W = 52;
+const GRIP_W = 14;
+const VOL_X = 84;
+const VOL_W = HEADER_W - VOL_X - 14;
 
 const C = {
   bg: '#1e1e1e',
@@ -32,11 +36,14 @@ const C = {
   white: '#ffffff',
 };
 
-type DragMode = 'move' | 'trimStart' | 'trimEnd' | 'fadeIn' | 'fadeOut' | 'seek';
+type DragMode = 'move' | 'trimStart' | 'trimEnd' | 'fadeIn' | 'fadeOut' | 'seek' | 'trackMove' | 'volume';
 
 interface Drag {
   mode: DragMode;
   clipId?: Id;
+  trackId?: Id;
+  /** trackMove: the row the track will be dropped on. */
+  targetIndex?: number;
   startX: number;
   start: number;
   end: number;
@@ -74,6 +81,7 @@ export class Timeline {
     canvas.addEventListener('mousemove', (e) => !this.drag && this.updateCursor(e));
     window.addEventListener('mousemove', (e) => this.drag && this.onDrag(e));
     window.addEventListener('mouseup', () => this.endDrag());
+    canvas.addEventListener('dblclick', (e) => this.onDoubleClick(e));
     canvas.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
     window.addEventListener('keydown', (e) => {
       if ((e.key === 'Delete' || e.key === 'Backspace') && this.selected) {
@@ -108,6 +116,34 @@ export class Timeline {
     const { x, y } = this.pos(clientX, clientY);
     const track = this.project.getTracks()[this.trackIndexAt(y)];
     return { trackId: track && y >= RULER_H ? track.id : null, time: Math.max(0, this.xToTime(x)) };
+  }
+
+  /** True when the screen position is below the ruler (the track area, with or without tracks). */
+  inTrackArea(clientX: number, clientY: number): boolean {
+    return this.pos(clientX, clientY).y >= RULER_H;
+  }
+
+  /** Shows a text box over the track's name in its header. */
+  beginRenameTrack(trackId: Id): void {
+    const ti = this.project.getTracks().findIndex((t) => t.id === trackId);
+    const track = this.project.getTracks()[ti];
+    if (!track) return;
+    const y = this.trackY(ti);
+    const host = this.canvas.parentElement ?? document.body;
+    editText(host, { x: GRIP_W + 2, y: y + 7, w: HEADER_W - GRIP_W - 40, h: 22 }, track.name, (name) => this.project.renameTrack(trackId, name));
+  }
+
+  /** Shows a text box over the clip's title bar. */
+  beginRenameClip(clipId: Id): void {
+    const tracks = this.project.getTracks();
+    const ti = tracks.findIndex((t) => t.clips.some((c) => c.id === clipId));
+    const clip = tracks[ti]?.clips.find((c) => c.id === clipId);
+    if (!clip) return;
+    const r = this.clipRect(ti, clip);
+    const host = this.canvas.parentElement ?? document.body;
+    const x = Math.max(HEADER_W, r.x);
+    const w = Math.max(120, Math.min(r.w, this.w - x));
+    editText(host, { x, y: r.y, w, h: TITLE_H + 4 }, clip.name, (name) => this.project.renameClip(clipId, name));
   }
 
   // ---------- coordinates ----------
@@ -166,6 +202,13 @@ export class Timeline {
 
   private updateCursor(e: MouseEvent): void {
     const { x, y } = this.pos(e.clientX, e.clientY);
+    if (x < HEADER_W && y >= RULER_H) {
+      const ti = this.trackIndexAt(y);
+      this.canvas.style.cursor = !this.project.getTracks()[ti]
+        ? 'default'
+        : this.inVolume(x, y, ti) || this.inChannelButton(x, y, ti) ? 'pointer' : 'grab';
+      return;
+    }
     const h = this.hit(x, y);
     this.canvas.style.cursor = !h
       ? 'default'
@@ -177,6 +220,7 @@ export class Timeline {
   }
 
   private onDown(e: MouseEvent): void {
+    if (e.button !== 0) return; // right-click is handled by the context menu
     const { x, y } = this.pos(e.clientX, e.clientY);
 
     if (y < RULER_H && x >= HEADER_W) {
@@ -195,6 +239,16 @@ export class Timeline {
         this.project.setMuted(track.id, !track.muted);
       } else if (track && this.inChannelButton(x, y, ti)) {
         this.project.setChannels(track.id, track.channels === 1 ? 2 : 1);
+      } else if (track && this.inVolume(x, y, ti)) {
+        // The whole drag is one undo step (finishEdit closes the batch).
+        this.project.beginBatch();
+        this.editing = true;
+        this.drag = { mode: 'volume', trackId: track.id, startX: x, start: 0, end: 0, fadeIn: 0, fadeOut: 0 };
+        this.setVolumeFromX(track.id, x);
+      } else if (track) {
+        // Anywhere else on the header: drag to reorder.
+        this.drag = { mode: 'trackMove', trackId: track.id, targetIndex: ti, startX: x, start: 0, end: 0, fadeIn: 0, fadeOut: 0 };
+        this.dirty = true;
       }
       return;
     }
@@ -221,6 +275,12 @@ export class Timeline {
   private endDrag(): void {
     const d = this.drag;
     this.drag = null;
+    if (d?.mode === 'trackMove' && d.trackId !== undefined && d.targetIndex !== undefined) {
+      this.project.moveTrack(d.trackId, d.targetIndex);
+      this.canvas.style.cursor = 'default';
+      this.dirty = true;
+      return;
+    }
     if (!this.editing) return;
     this.editing = false; // from here finishEdit owns the open batch
     void this.finishEdit(d);
@@ -256,9 +316,47 @@ export class Timeline {
     return x >= 10 && x <= 10 + CH_BTN_W && y >= by && y <= by + 18;
   }
 
+  private inVolume(x: number, y: number, ti: number): boolean {
+    const cy = this.trackY(ti) + TRACK_H - 17;
+    return x >= VOL_X - 4 && x <= VOL_X + VOL_W + 4 && y >= cy - 9 && y <= cy + 9;
+  }
+
+  private setVolumeFromX(trackId: Id, x: number): void {
+    const v = ((x - VOL_X) / VOL_W) * 2; // slider middle = unity gain
+    this.project.setVolume(trackId, Math.round(Math.min(2, Math.max(0, v)) * 100) / 100);
+  }
+
+  private onDoubleClick(e: MouseEvent): void {
+    if (e.button !== 0) return;
+    const { x, y } = this.pos(e.clientX, e.clientY);
+    if (y < RULER_H) return;
+    if (x < HEADER_W) {
+      const ti = this.trackIndexAt(y);
+      const track = this.project.getTracks()[ti];
+      // Double-click on the name area of a header renames the track.
+      const ty = this.trackY(ti);
+      if (track && x < HEADER_W - 36 && y >= ty + 4 && y <= ty + 32) this.beginRenameTrack(track.id);
+      return;
+    }
+    const h = this.hit(x, y);
+    if (h) this.beginRenameClip(h.clip.id);
+  }
+
   private onDrag(e: MouseEvent): void {
     const d = this.drag!;
     const { x, y } = this.pos(e.clientX, e.clientY);
+
+    if (d.mode === 'trackMove') {
+      const last = this.project.getTracks().length - 1;
+      d.targetIndex = Math.min(last, Math.max(0, this.trackIndexAt(y)));
+      this.canvas.style.cursor = 'grabbing';
+      this.dirty = true;
+      return;
+    }
+    if (d.mode === 'volume') {
+      if (d.trackId) this.setVolumeFromX(d.trackId, x);
+      return;
+    }
 
     if (d.mode === 'seek') {
       this.onSeek(Math.max(0, this.xToTime(x)));
@@ -359,11 +457,12 @@ export class Timeline {
       g.fillStyle = C.dim;
       g.font = '13px system-ui, sans-serif';
       g.textAlign = 'center';
-      g.fillText('Drop audio files here', HEADER_W + (w - HEADER_W) / 2, RULER_H + 60);
+      g.fillText('Drop audio files here, or right-click to add a track', HEADER_W + (w - HEADER_W) / 2, RULER_H + 60);
       g.textAlign = 'left';
     }
 
     this.drawHeaders();
+    this.drawTrackDrop();
     this.drawRuler();
     this.drawScrollbar();
 
@@ -417,20 +516,36 @@ export class Timeline {
     g.fillRect(HEADER_W - 1, 0, 1, this.h);
   }
 
+  /** Cuts text so it fits `maxW` pixels, adding an ellipsis. */
+  private fit(text: string, maxW: number): string {
+    const g = this.g;
+    if (g.measureText(text).width <= maxW) return text;
+    let t = text;
+    while (t.length > 1 && g.measureText(`${t}…`).width > maxW) t = t.slice(0, -1);
+    return `${t}…`;
+  }
+
   private drawHeaders(): void {
     const g = this.g;
     this.project.getTracks().forEach((t, i) => {
       const y = this.trackY(i);
-      g.fillStyle = C.panel;
+      const moving = this.drag?.mode === 'trackMove' && this.drag.trackId === t.id;
+      g.fillStyle = moving ? '#2d2d30' : C.panel;
       g.fillRect(0, y, HEADER_W, TRACK_H);
       g.fillStyle = C.border;
       g.fillRect(0, y + TRACK_H - 1, HEADER_W, 1);
 
-      g.fillStyle = C.text;
+      // grip (drag to reorder)
+      g.fillStyle = C.dim;
+      for (let r = 0; r < 3; r++) for (let c = 0; c < 2; c++) g.fillRect(3 + c * 4, y + TRACK_H / 2 - 7 + r * 5, 2, 2);
+
+      // name
+      g.fillStyle = moving ? C.dim : C.text;
       g.font = '12px system-ui, sans-serif';
       g.textAlign = 'left';
-      g.fillText(t.name.length > 11 ? `${t.name.slice(0, 10)}…` : t.name, 10, y + 24);
+      g.fillText(this.fit(t.name, HEADER_W - GRIP_W - 44), GRIP_W + 6, y + 23);
 
+      // mute
       const bx = HEADER_W - 30;
       const by = y + 10;
       g.fillStyle = t.muted ? C.accent : 'transparent';
@@ -446,11 +561,33 @@ export class Timeline {
       if (t.clips.length === 0) {
         // Only an empty track can change layout; a track with audio just shows its label.
         g.strokeStyle = C.border;
-        g.strokeRect(10.5, cy + 0.5, CH_BTN_W - 1, 17);
+        g.strokeRect(GRIP_W + 0.5, cy + 0.5, CH_BTN_W - 1, 17);
       }
       g.fillStyle = C.dim;
-      g.fillText(t.channels === 1 ? 'Mono' : 'Stereo', 17, cy + 13);
+      g.fillText(t.channels === 1 ? 'Mono' : 'Stereo', GRIP_W + 7, cy + 13);
+
+      // volume slider (middle = unity)
+      const vy = y + TRACK_H - 19;
+      g.fillStyle = C.border;
+      g.fillRect(VOL_X, vy, VOL_W, 4);
+      g.fillStyle = C.accent;
+      g.fillRect(VOL_X, vy, (t.volume / 2) * VOL_W, 4);
+      g.fillStyle = C.dim;
+      g.fillRect(VOL_X + VOL_W / 2, vy - 2, 1, 8);
+      g.fillStyle = C.white;
+      g.fillRect(VOL_X + (t.volume / 2) * VOL_W - 2, vy - 3, 4, 10);
     });
+  }
+
+  /** While a track header is dragged: highlight where it will land. */
+  private drawTrackDrop(): void {
+    const d = this.drag;
+    if (!d || d.mode !== 'trackMove' || d.targetIndex === undefined || d.trackId === undefined) return;
+    const from = this.project.getTracks().findIndex((t) => t.id === d.trackId);
+    if (from < 0 || from === d.targetIndex) return;
+    const y = this.trackY(d.targetIndex) + (d.targetIndex > from ? TRACK_H : 0);
+    this.g.fillStyle = C.accent;
+    this.g.fillRect(0, y - 1, this.w, 2);
   }
 
   private drawClip(ti: number, c: Clip): void {

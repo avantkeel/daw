@@ -204,10 +204,43 @@ export class Project {
     this.change(() => (t.channels = channels));
   }
 
+  /** Track gain, 0 (silent) to 2 (+6 dB). 1 is unity. */
+  setVolume(trackId: Id, volume: number): void {
+    const t = this.tracks.find((x) => x.id === trackId);
+    if (!t) return;
+    this.change(() => (t.volume = clamp(volume, 0, 2)));
+  }
+
   setMuted(trackId: Id, muted: boolean): void {
     const t = this.tracks.find((x) => x.id === trackId);
     if (!t) return;
     this.change(() => (t.muted = muted));
+  }
+
+  renameTrack(trackId: Id, name: string): void {
+    const t = this.tracks.find((x) => x.id === trackId);
+    const clean = name.trim();
+    if (!t || !clean || t.name === clean) return;
+    this.change(() => (t.name = clean));
+  }
+
+  renameClip(clipId: Id, name: string): void {
+    const found = this.findClip(clipId);
+    const clean = name.trim();
+    if (!found || !clean || found.clip.name === clean) return;
+    this.change(() => (found.clip.name = clean));
+  }
+
+  /** Moves a track to `newIndex` in the track list (0 = top). */
+  moveTrack(trackId: Id, newIndex: number): void {
+    const from = this.tracks.findIndex((t) => t.id === trackId);
+    if (from < 0) return;
+    const to = clamp(newIndex, 0, this.tracks.length - 1);
+    if (to === from) return;
+    this.change(() => {
+      const [t] = this.tracks.splice(from, 1);
+      this.tracks.splice(to, 0, t);
+    });
   }
 
   addClip(trackId: Id, init: NewClip): Clip | undefined {

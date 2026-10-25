@@ -142,3 +142,21 @@ button.primary:hover { background: var(--accent-hover); }
 .modal-title { color: #fff; font-size: 14px; margin-bottom: 8px; }
 .modal-text { margin-bottom: 16px; }
 .modal-buttons { display: flex; justify-content: flex-end; gap: 6px; }
+
+.context-menu {
+  position: fixed;
+  z-index: 200;
+  min-width: 170px;
+}
+
+.inline-edit {
+  position: absolute;
+  z-index: 5;
+  padding: 0 4px;
+  background: var(--bg);
+  color: #fff;
+  border: 1px solid var(--accent);
+  border-radius: 0;
+  font: 12px system-ui, sans-serif;
+  outline: none;
+}

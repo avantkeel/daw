@@ -3,7 +3,7 @@ import { parseProject, type ParsedSource } from './core/deserialize';
 import { relativeToFolder, resolveInFolder } from './core/paths';
 import type { Project } from './core/project';
 import { PROJECT_EXTENSION, serializeProject } from './core/serialize';
-import type { AssetRef, ClipData, TrackData } from './core/types';
+import { defaultTemplate, type AssetRef, type ClipData, type TrackData } from './core/types';
 import type { Platform, ProjectLocation } from './platform/platform';
 import { askUnsavedChanges } from './ui/dialog';
 
@@ -80,7 +80,7 @@ export class ProjectFiles {
     }
     this.engine.stop();
     this.engine.assets.clear();
-    this.project.load([], []);
+    this.project.load(defaultTemplate(), []);
     this.current = null;
     this.setDirty(false);
     this.updateTitle();

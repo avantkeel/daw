@@ -1,12 +1,13 @@
 import { AudioEngine } from './audio/engine';
 import { renderToWav } from './audio/exporter';
 import { Project } from './core/project';
-import { trackChannelsFor } from './core/types';
+import { defaultTemplate, trackChannelsFor } from './core/types';
 import { byId } from './ui/dom';
 import { askReplaceClips } from './ui/dialog';
 import { attachFileDrop } from './ui/dropzone';
 import { Timeline } from './ui/timeline';
 import { MenuBar } from './ui/menubar';
+import { showContextMenu } from './ui/contextmenu';
 import { Toolbar } from './ui/toolbar';
 import { createPlatform } from './platform-factory';
 import { ProjectFiles } from './project-files';
@@ -46,6 +47,9 @@ export function bootstrap(): void {
     () => engine.position,
     (t) => engine.seek(t),
   );
+
+  // Loaded before ProjectFiles exists, so the starting template doesn't count as an unsaved change.
+  project.load(defaultTemplate(), []);
 
   const files = new ProjectFiles(
     project,
@@ -93,6 +97,19 @@ export function bootstrap(): void {
   ]);
 
   const stage = byId('stage');
+
+  // Right-click in the track area: add a mono or stereo track (and rename the track under the cursor).
+  stage.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    if (!timeline.inTrackArea(e.clientX, e.clientY)) return;
+    const items = [
+      { label: 'New Mono Track', onSelect: () => newTrack(1) },
+      { label: 'New Stereo Track', onSelect: () => newTrack(2) },
+    ];
+    const over = timeline.locate(e.clientX, e.clientY).trackId;
+    if (over) items.unshift({ label: 'Rename Track', onSelect: () => timeline.beginRenameTrack(over) });
+    showContextMenu(e.clientX, e.clientY, items);
+  });
   attachFileDrop(stage, async (files, x, y) => {
     const where = timeline.locate(x, y);
     let first = true;
