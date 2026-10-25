@@ -4,8 +4,10 @@ import { Project } from './core/project';
 import { byId } from './ui/dom';
 import { attachFileDrop } from './ui/dropzone';
 import { Timeline } from './ui/timeline';
+import { MenuBar } from './ui/menubar';
 import { Toolbar } from './ui/toolbar';
 import { createPlatform } from './platform-factory';
+import { ProjectFiles } from './project-files';
 
 export function bootstrap(): void {
   const project = new Project();
@@ -43,6 +45,25 @@ export function bootstrap(): void {
     (t) => engine.seek(t),
   );
 
+  const files = new ProjectFiles(
+    project,
+    engine,
+    platform,
+    (msg) => toolbar.setStatus(msg),
+    (name) => (document.title = `${name} - DAW`),
+  );
+  const mod = /Mac/.test(navigator.platform) ? '⌘' : 'Ctrl+';
+  new MenuBar(byId('menubar'), [
+    {
+      label: 'File',
+      items: [
+        { label: 'Open…', shortcut: `${mod}O`, onSelect: () => void files.open() },
+        { label: 'Save', shortcut: `${mod}S`, onSelect: () => void files.save() },
+        { label: 'Save As…', shortcut: `${mod}Shift+S`, onSelect: () => void files.save(true) },
+      ],
+    },
+  ]);
+
   const stage = byId('stage');
   attachFileDrop(stage, async (files, x, y) => {
     const where = timeline.locate(x, y);
@@ -50,6 +71,14 @@ export function bootstrap(): void {
     for (const file of files) {
       try {
         const asset = await engine.assets.importFile(file);
+        project.registerAsset({
+          id: asset.assetId,
+          fileName: asset.name,
+          duration: asset.duration,
+          sampleRate: asset.sampleRate,
+          channels: asset.channels,
+          path: platform.getFilePath(file),
+        });
         const useExisting = first && where.trackId;
         const trackId = useExisting ? where.trackId! : project.addTrack(file.name.replace(/\.[^.]+$/, '')).id;
         project.addClip(trackId, {
@@ -67,6 +96,16 @@ export function bootstrap(): void {
   });
 
   window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      void files.save(e.shiftKey);
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o') {
+      e.preventDefault();
+      void files.open();
+      return;
+    }
     if (e.code === 'Space') {
       e.preventDefault();
       togglePlay();

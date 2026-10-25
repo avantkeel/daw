@@ -1,5 +1,5 @@
 import { Emitter } from './emitter';
-import type { Clip, Id, Track } from './types';
+import type { AssetRef, Clip, Id, Track, TrackData } from './types';
 
 const MIN_CLIP = 0.01;
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -18,9 +18,31 @@ export interface NewClip {
 export class Project {
   readonly changed = new Emitter();
   private tracks: Track[] = [];
+  private assets = new Map<Id, AssetRef>();
 
   getTracks(): readonly Track[] {
     return this.tracks;
+  }
+
+  /** Replaces the whole project (used when opening a file). Ids are generated here. */
+  load(tracks: TrackData[], assets: AssetRef[]): void {
+    this.assets = new Map(assets.map((a) => [a.id, a]));
+    this.tracks = tracks.map((t) => ({
+      id: uid('track'),
+      name: t.name,
+      volume: t.volume,
+      muted: t.muted,
+      clips: t.clips.map((c) => ({ ...c, id: uid('clip') })),
+    }));
+    this.changed.emit();
+  }
+
+  registerAsset(ref: AssetRef): void {
+    this.assets.set(ref.id, ref);
+  }
+
+  getAsset(id: Id): AssetRef | undefined {
+    return this.assets.get(id);
   }
 
   duration(): number {

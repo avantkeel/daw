@@ -13,12 +13,20 @@ export class AssetStore {
 
   constructor(private ctx: BaseAudioContext) {}
 
-  async importFile(file: File): Promise<{ assetId: Id; name: string; duration: number }> {
-    const data = await file.arrayBuffer();
+  async importFile(file: File): Promise<{ assetId: Id; name: string; duration: number; sampleRate: number; channels: number }> {
+    const asset = await this.importBuffer(await file.arrayBuffer());
+    return { ...asset, name: file.name };
+  }
+
+  async importBuffer(data: ArrayBuffer): Promise<{ assetId: Id; duration: number; sampleRate: number; channels: number }> {
     const buffer = await this.ctx.decodeAudioData(data);
     const assetId = `asset_${++this.seq}`;
     this.items.set(assetId, { buffer, peaks: computePeaks(buffer) });
-    return { assetId, name: file.name, duration: buffer.duration };
+    return { assetId, duration: buffer.duration, sampleRate: buffer.sampleRate, channels: buffer.numberOfChannels };
+  }
+
+  clear(): void {
+    this.items.clear();
   }
 
   getBuffer(id: Id): AudioBuffer | undefined {

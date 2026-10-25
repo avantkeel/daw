@@ -23,3 +23,24 @@ export interface Track {
   muted: boolean;
   clips: Clip[];
 }
+
+/** Describes a source audio file. The audio data itself lives in audio/AssetStore. */
+export interface AssetRef {
+  id: Id;
+  fileName: string;
+  duration: number;
+  sampleRate: number;
+  channels: number;
+  /** Absolute path of the original file, when the host could tell us. */
+  path?: string;
+}
+
+/** A clip without its id, used when loading a project. */
+export type ClipData = Omit<Clip, 'id'>;
+
+export interface TrackData {
+  name: string;
+  volume: number;
+  muted: boolean;
+  clips: ClipData[];
+}

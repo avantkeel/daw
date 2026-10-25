@@ -70,3 +70,47 @@ button.primary:hover { background: var(--accent-hover); }
   color: #fff;
   font-size: 12px;
 }
+
+.menubar {
+  display: flex;
+  padding: 0 4px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.menu { position: relative; }
+
+.menu-btn,
+.menu-item {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+.menu-btn { padding: 4px 10px; }
+.menu-btn:hover,
+.menu-btn.active { background: #333333; }
+
+.menu-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 10;
+  min-width: 240px;
+  padding: 4px 0;
+  background: var(--panel);
+  border: 1px solid #454545;
+}
+.menu-list[hidden] { display: none; }
+
+.menu-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  width: 100%;
+  padding: 4px 20px;
+  text-align: left;
+}
+.menu-item:hover { background: var(--accent); color: #fff; }
+.menu-shortcut { color: #858585; }
+.menu-item:hover .menu-shortcut { color: #fff; }

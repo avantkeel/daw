@@ -16,7 +16,7 @@ There is no test runner, linter, or watch mode yet.
 
 ## Scope (do not expand without being asked)
 
-In scope: WAV/audio import by drag and drop, clip move, trim, fade in/out, playback, mute, WAV export.
+In scope: WAV/audio import by drag and drop, clip move, trim, fade in/out, playback, mute, WAV export, saving and opening projects.
 
 Out of scope: MIDI of any kind, VST/plugins, piano roll, instruments, effects, automation, recording.
 Do not add these, and do not add dependencies for them.
@@ -30,9 +30,10 @@ src/
   renderer.ts          entry point, only calls bootstrap()
   bootstrap.ts         wires project, engine, timeline, toolbar
   platform-factory.ts  the ONLY file that chooses a host (Electron or web)
-  core/                project model + fade math. Pure TS.
+  project-files.ts     save/open projects, remembers the project location
+  core/                project model, fade math, project file read/write (serialize, deserialize, xml). Pure TS.
   audio/               Web Audio: decode, peaks, scheduling, playback, WAV export
-  ui/                  canvas timeline, toolbar, drop handling, HTML/CSS
+  ui/                  canvas timeline, menu bar, toolbar, drop handling, HTML/CSS
   platform/
     platform.ts        Platform interface (what the app needs from its host)
     web/               browser fallback
@@ -47,7 +48,7 @@ Dependencies point downward only:
 - `audio/` may import `core/`. No Electron, no `ui/`.
 - `ui/` may import `core/` and types from `audio/` (e.g. `Peaks`). No Electron.
 - `platform/` imports nothing else from the project except its own files.
-- Root files (`bootstrap.ts`, `platform-factory.ts`, `renderer.ts`) may import anything.
+- Root files (`bootstrap.ts`, `platform-factory.ts`, `project-files.ts`, `renderer.ts`) may import anything.
 - `electron` and `node:*` may only be imported inside `src/platform/electron/`.
 
 ### Keeping Electron replaceable
@@ -73,6 +74,26 @@ Electron must stay removable by deleting `src/platform/electron/`, one line in
 - `audio/scheduler.ts` is shared by live playback and offline export, so playback and export
   must always sound identical. Don't duplicate its logic.
 
+## Project files
+
+- Saving creates a folder named after the project, containing `<name>.audioproject`
+  (`<chosen path>/<name>/<name>.audioproject`). First save or Save As asks where; later saves overwrite silently.
+- Triggers: File menu (Open, Save, Save As), Ctrl/Cmd+O, Ctrl/Cmd+S, Ctrl/Cmd+Shift+S.
+- The file is XML modelled on the DAWproject `project.xml` (Application, Transport, Structure, Arrangement).
+  It is "similar to", not conformant with, DAWproject: no zip container, no `metadata.xml`.
+- Serialization lives in `core/serialize.ts`, parsing in `core/deserialize.ts` (with a tiny parser in
+  `core/xml.ts`). All pure, string in/out. File and folder I/O lives behind
+  `Platform.saveProject`; the host is given the extension and content and knows nothing about the format.
+- Audio files are NOT copied into the project folder yet. Clips reference the original file as
+  `<File external="true">`, using its absolute path when the host knows it (`Platform.getFilePath`,
+  Electron only) and just the file name otherwise.
+- Opening replaces the current project (`Project.load`), re-reads each referenced audio file by absolute
+  path via `Platform.readFile`, and decodes it. Files that can't be found become silent placeholder
+  assets, so the clips and their data survive a re-save.
+- When adding fields to `Project`/`Clip`/`Track`, update `core/serialize.ts`, `core/deserialize.ts`
+  and `ProjectFiles.open`, and extend the round trip.
+- Electron's `readFile` IPC only reads audio extensions, so the renderer can't read arbitrary files.
+
 ## Code conventions
 
 - TypeScript `strict` mode. Avoid `any`; prefer small interfaces.
@@ -80,7 +101,7 @@ Electron must stay removable by deleting `src/platform/electron/`, one line in
 - Keep files small and single-purpose. Prefer adding a module over growing `timeline.ts`.
 - Wrap anything that can fail from user input (decoding files, export) in try/catch and show a
   message via `toolbar.setStatus(...)`.
-- Always use `.replace` fallback-safe, explicit code over clever abstractions. This is an MVP.
+- Prefer explicit, simple code over clever abstractions. This is an MVP.
 
 ## UI / theme
 
@@ -93,7 +114,9 @@ VS Code default dark look. Black/white/blue only, minimalist.
 
 ## Known limitations (fine to leave unless asked)
 
-- No undo/redo, no project save/load, no clip splitting.
+- No undo/redo, no clip splitting, no unsaved-changes warning (Open replaces the current project without asking).
+- Saved projects don't contain the audio yet, only references. If a source file is moved, its clips open silent.
+- In the browser build, projects can be saved and opened but audio can't be reloaded (no file paths).
 - Edits during playback restart playback from the current position after a ~120 ms debounce.
 - No watch mode; rebuild with `pnpm build`.
 
