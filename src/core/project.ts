@@ -2,6 +2,8 @@ import { Emitter } from './emitter';
 import { trackChannelsFor, type AssetRef, type ChannelCount, type Clip, type Id, type Track, type TrackData } from './types';
 
 const MIN_CLIP = 0.01;
+/** Clips that only touch end to start are not overlapping. */
+const EPS = 1e-6;
 const MAX_HISTORY = 100;
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
@@ -72,6 +74,13 @@ export class Project {
     } finally {
       this.endBatch();
     }
+  }
+
+  /** Closes the open batch and puts the tracks back as they were when it began. Nothing is recorded for undo. */
+  abortBatch(): void {
+    if (this.batching === 0) return;
+    this.batching = 0;
+    this.restore(this.batchBefore);
   }
 
   /** Returns false if there was nothing to undo. */
@@ -163,6 +172,20 @@ export class Project {
     const track = this.tracks.find((t) => t.id === trackId);
     const asset = this.assets.get(assetId);
     return !!track && !!asset && track.channels === trackChannelsFor(asset.channels);
+  }
+
+  /** Clips on a track that overlap the time range [start, start + duration). `exceptId` is left out. */
+  clipsInRange(trackId: Id, start: number, duration: number, exceptId?: Id): Clip[] {
+    const track = this.tracks.find((t) => t.id === trackId);
+    if (!track) return [];
+    const end = start + duration;
+    return track.clips.filter((c) => c.id !== exceptId && c.start < end - EPS && start < c.start + c.duration - EPS);
+  }
+
+  /** The other clips on the same track that this clip overlaps. */
+  overlapping(clipId: Id): Clip[] {
+    const found = this.findClip(clipId);
+    return found ? this.clipsInRange(found.track.id, found.clip.start, found.clip.duration, clipId) : [];
   }
 
   // ---------- edits ----------

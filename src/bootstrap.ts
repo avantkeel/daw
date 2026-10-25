@@ -3,6 +3,7 @@ import { renderToWav } from './audio/exporter';
 import { Project } from './core/project';
 import { trackChannelsFor } from './core/types';
 import { byId } from './ui/dom';
+import { askReplaceClips } from './ui/dialog';
 import { attachFileDrop } from './ui/dropzone';
 import { Timeline } from './ui/timeline';
 import { MenuBar } from './ui/menubar';
@@ -110,17 +111,28 @@ export function bootstrap(): void {
         // otherwise (or when dropped elsewhere) make a new mono/stereo track to match.
         const channels = trackChannelsFor(asset.channels);
         const target = first && where.trackId ? project.getTracks().find((t) => t.id === where.trackId) : undefined;
-        // One undo step for the new track (if any) plus its clip.
+        // The track the file goes on, if it can go on the one it was dropped on; otherwise a new one is made.
+        const lane = target && target.channels === channels ? target : undefined;
+        const start = target ? where.time : 0;
+        // Clips on a track may not overlap: ask before deleting the ones in the way.
+        const hits = lane ? project.clipsInRange(lane.id, start, asset.duration) : [];
+        if (hits.length > 0) {
+          const ok = await askReplaceClips(asset.name, hits.map((h) => h.name), 'does not add the file.');
+          if (!ok) {
+            toolbar.setStatus(`Not added ${asset.name}: it would overlap another clip`);
+            first = false;
+            continue;
+          }
+        }
+        // One undo step for the deleted clips, the new track (if any) and the new clip.
         project.batch(() => {
-          const trackId =
-            target && target.channels === channels
-              ? target.id
-              : project.addTrack(file.name.replace(/\.[^.]+$/, ''), channels).id;
+          for (const h of hits) project.removeClip(h.id);
+          const trackId = lane ? lane.id : project.addTrack(file.name.replace(/\.[^.]+$/, ''), channels).id;
           project.addClip(trackId, {
             assetId: asset.assetId,
             name: asset.name,
             sourceDuration: asset.duration,
-            start: target ? where.time : 0,
+            start,
           });
         });
         toolbar.setStatus(`Added ${asset.name} (${channels === 1 ? 'mono' : 'stereo'})`);

@@ -65,6 +65,11 @@ Electron must stay removable by deleting `src/platform/electron/`, one line in
 
 ## Data model notes
 
+- Clips on one track never overlap (touching is fine). The editor enforces it with a prompt, not in `Project`: `Project.overlapping`
+  / `clipsInRange` find the clips in the way. A clip drag (move/trim) keeps its undo batch open until mouseup; if it overlaps,
+  `Timeline.finishEdit` asks (`askReplaceClips`) and either deletes the overlapped clips inside the same batch or calls
+  `Project.abortBatch()`, which restores the state from before the drag. File drops ask before adding. Old project files may
+  still contain overlaps.
 - Mono audio lives on mono tracks, stereo on stereo tracks. `Project.accepts(trackId, assetId)` is the rule; `moveClip`
   ignores a track change that fails it (the clip still moves in time) and `setChannels` ignores tracks that have clips.
 - `Peaks.channels` has one array per displayed channel (1 for mono, 2 for stereo), and the timeline draws one lane per array.

@@ -1,6 +1,7 @@
 import type { Peaks } from '../audio/peaks';
 import type { Project } from '../core/project';
 import type { Clip, Id } from '../core/types';
+import { askReplaceClips } from './dialog';
 import { formatRuler } from './format';
 
 export interface PeaksSource {
@@ -218,11 +219,35 @@ export class Timeline {
   }
 
   private endDrag(): void {
-    if (this.editing) {
-      this.editing = false;
-      this.project.endBatch();
-    }
+    const d = this.drag;
     this.drag = null;
+    if (!this.editing) return;
+    this.editing = false; // from here finishEdit owns the open batch
+    void this.finishEdit(d);
+  }
+
+  /**
+   * Ends the undo batch opened by the drag. Clips on one track may not overlap, so if a move or trim
+   * ended on top of other clips, ask: Delete removes them (same undo step), Cancel puts everything back.
+   */
+  private async finishEdit(d: Drag | null): Promise<void> {
+    try {
+      const shapesClip = d?.mode === 'move' || d?.mode === 'trimStart' || d?.mode === 'trimEnd';
+      const hits = d?.clipId && shapesClip ? this.project.overlapping(d.clipId) : [];
+      const clip = d?.clipId ? this.project.findClip(d.clipId)?.clip : undefined;
+      if (clip && hits.length > 0) {
+        const deleteThem = await askReplaceClips(clip.name, hits.map((h) => h.name), 'puts the clip back where it was.');
+        if (!deleteThem) {
+          this.project.abortBatch();
+          return;
+        }
+        for (const h of hits) this.project.removeClip(h.id);
+      }
+      this.project.endBatch();
+    } catch (err) {
+      this.project.abortBatch();
+      throw err;
+    }
   }
 
   /** The Mono/Stereo toggle in the bottom-left of a track header. */
