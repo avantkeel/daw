@@ -1,5 +1,6 @@
 import type { AudioEngine } from './audio/engine';
 import { parseProject, type ParsedSource } from './core/deserialize';
+import { stripAudioExtension } from './core/names';
 import { relativeToFolder, resolveInFolder } from './core/paths';
 import type { Project } from './core/project';
 import { PROJECT_EXTENSION, serializeProject } from './core/serialize';
@@ -176,7 +177,7 @@ export class ProjectFiles {
           const fadeIn = Math.min(pc.fadeIn, duration);
           clips.push({
             assetId: asset.ref.id,
-            name: pc.name,
+            name: stripAudioExtension(pc.name), // older projects stored the file name here
             start: pc.start,
             offset: pc.offset,
             duration,

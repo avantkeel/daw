@@ -22,7 +22,8 @@ Drag audio in, move / trim / fade clips, play, export WAV. No MIDI, no plugins.
 - File > Copy Audio to Project Folder: copies audio used by the project into `<n>/Audio/` and saves (needs a saved project; desktop only)
 - Edit > Undo / Redo, or Ctrl/Cmd+Z / Ctrl/Cmd+Y: undo and redo clip and track edits (a whole drag is one step)
 - New projects start with 4 tracks: Stereo 1, Stereo 2, Mono 1, Mono 2
-- Right-click in the track area: New Mono Track / New Stereo Track (and Rename Track when over a track)
+- Right-click in the track area: New Mono Track / New Stereo Track. On a track: also Rename Track and Delete Track (undoable). On a clip: Rename Clip
+- Clip names are just labels (shown without the file extension); renaming a clip never changes the audio file it points to
 - Double-click a track name or a clip to rename it (Enter saves, Esc cancels)
 - Drag a track header (the grip on the left) up or down to reorder tracks
 - Track header: name, M (mute), Mono/Stereo label, volume slider (centre mark = unity)

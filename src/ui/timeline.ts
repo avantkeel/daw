@@ -123,6 +123,12 @@ export class Timeline {
     return this.pos(clientX, clientY).y >= RULER_H;
   }
 
+  /** The clip under a screen position, if any. */
+  clipAt(clientX: number, clientY: number): Id | null {
+    const { x, y } = this.pos(clientX, clientY);
+    return this.hit(x, y)?.clip.id ?? null;
+  }
+
   /** Shows a text box over the track's name in its header. */
   beginRenameTrack(trackId: Id): void {
     const ti = this.project.getTracks().findIndex((t) => t.id === trackId);

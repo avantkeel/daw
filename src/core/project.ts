@@ -231,6 +231,14 @@ export class Project {
     this.change(() => (found.clip.name = clean));
   }
 
+  /** Deletes a track and its clips (assets stay loaded). */
+  removeTrack(trackId: Id): void {
+    if (!this.tracks.some((t) => t.id === trackId)) return;
+    this.change(() => {
+      this.tracks = this.tracks.filter((t) => t.id !== trackId);
+    });
+  }
+
   /** Moves a track to `newIndex` in the track list (0 = top). */
   moveTrack(trackId: Id, newIndex: number): void {
     const from = this.tracks.findIndex((t) => t.id === trackId);

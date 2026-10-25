@@ -1,6 +1,7 @@
 import { AudioEngine } from './audio/engine';
 import { renderToWav } from './audio/exporter';
 import { Project } from './core/project';
+import { stripAudioExtension } from './core/names';
 import { defaultTemplate, trackChannelsFor } from './core/types';
 import { byId } from './ui/dom';
 import { askReplaceClips } from './ui/dialog';
@@ -66,6 +67,12 @@ export function bootstrap(): void {
     const track = project.addTrack(undefined, channels);
     toolbar.setStatus(`Added ${track.name} (${channels === 1 ? 'mono' : 'stereo'})`);
   };
+  const deleteTrack = (trackId: string) => {
+    const track = project.getTracks().find((t) => t.id === trackId);
+    if (!track) return;
+    project.removeTrack(trackId);
+    toolbar.setStatus(`Deleted ${track.name} (Edit > Undo brings it back)`);
+  };
   new MenuBar(byId('menubar'), [
     {
       label: 'File',
@@ -106,14 +113,24 @@ export function bootstrap(): void {
       { label: 'New Mono Track', onSelect: () => newTrack(1) },
       { label: 'New Stereo Track', onSelect: () => newTrack(2) },
     ];
-    const over = timeline.locate(e.clientX, e.clientY).trackId;
-    if (over) items.unshift({ label: 'Rename Track', onSelect: () => timeline.beginRenameTrack(over) });
+    const clipId = timeline.clipAt(e.clientX, e.clientY);
+    const trackId = timeline.locate(e.clientX, e.clientY).trackId;
+    if (clipId) {
+      // Right-click on a clip: rename that clip (the audio file it points to is not touched).
+      items.unshift({ label: 'Rename Clip', onSelect: () => timeline.beginRenameClip(clipId) });
+    } else if (trackId) {
+      items.unshift(
+        { label: 'Rename Track', onSelect: () => timeline.beginRenameTrack(trackId) },
+        { label: 'Delete Track', onSelect: () => deleteTrack(trackId) },
+      );
+    }
     showContextMenu(e.clientX, e.clientY, items);
   });
   attachFileDrop(stage, async (files, x, y) => {
     const where = timeline.locate(x, y);
     let first = true;
     for (const file of files) {
+      const clipName = stripAudioExtension(file.name);
       try {
         const asset = await engine.assets.importFile(file);
         project.registerAsset({
@@ -134,9 +151,9 @@ export function bootstrap(): void {
         // Clips on a track may not overlap: ask before deleting the ones in the way.
         const hits = lane ? project.clipsInRange(lane.id, start, asset.duration) : [];
         if (hits.length > 0) {
-          const ok = await askReplaceClips(asset.name, hits.map((h) => h.name), 'does not add the file.');
+          const ok = await askReplaceClips(clipName, hits.map((h) => h.name), 'does not add the file.');
           if (!ok) {
-            toolbar.setStatus(`Not added ${asset.name}: it would overlap another clip`);
+            toolbar.setStatus(`Not added ${clipName}: it would overlap another clip`);
             first = false;
             continue;
           }
@@ -144,15 +161,15 @@ export function bootstrap(): void {
         // One undo step for the deleted clips, the new track (if any) and the new clip.
         project.batch(() => {
           for (const h of hits) project.removeClip(h.id);
-          const trackId = lane ? lane.id : project.addTrack(file.name.replace(/\.[^.]+$/, ''), channels).id;
+          const trackId = lane ? lane.id : project.addTrack(clipName, channels).id;
           project.addClip(trackId, {
             assetId: asset.assetId,
-            name: asset.name,
+            name: clipName,
             sourceDuration: asset.duration,
             start,
           });
         });
-        toolbar.setStatus(`Added ${asset.name} (${channels === 1 ? 'mono' : 'stereo'})`);
+        toolbar.setStatus(`Added ${clipName} (${channels === 1 ? 'mono' : 'stereo'})`);
       } catch {
         toolbar.setStatus(`Could not decode ${file.name}`);
       }

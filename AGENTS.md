@@ -92,6 +92,7 @@ Electron must stay removable by deleting `src/platform/electron/`, one line in
 
 - `core/types.ts` has `defaultTemplate()` (two stereo, two mono tracks). `bootstrap` and `ProjectFiles.newProject` load it.
 - `Project.renameTrack`, `renameClip`, `moveTrack`, `setVolume` are normal undoable edits. Empty names are ignored.
+- A clip's `name` is only a label. The audio file reference is the asset's `fileName`/`path`. New clips get the file name without its audio extension (`core/names.ts`, also applied to old projects on open). `Project.removeTrack` deletes a track with its clips.
 - `ui/textedit.ts` (inline rename input) and `ui/contextmenu.ts` (right-click menu) are the small UI helpers the timeline and bootstrap use.
 
 ## Project files
