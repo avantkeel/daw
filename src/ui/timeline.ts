@@ -50,6 +50,7 @@ export class Timeline {
   private scrollX = 0; // seconds
   private selected: Id | null = null;
   private drag: Drag | null = null;
+  private editing = false; // a project batch (one undo step) is open for the current drag
   private dirty = true;
   private w = 0;
   private h = 0;
@@ -70,7 +71,7 @@ export class Timeline {
     canvas.addEventListener('mousedown', (e) => this.onDown(e));
     canvas.addEventListener('mousemove', (e) => !this.drag && this.updateCursor(e));
     window.addEventListener('mousemove', (e) => this.drag && this.onDrag(e));
-    window.addEventListener('mouseup', () => (this.drag = null));
+    window.addEventListener('mouseup', () => this.endDrag());
     canvas.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
     window.addEventListener('keydown', (e) => {
       if ((e.key === 'Delete' || e.key === 'Backspace') && this.selected) {
@@ -188,6 +189,8 @@ export class Timeline {
     this.selected = h?.clip.id ?? null;
     if (h) {
       const c = h.clip;
+      this.project.beginBatch();
+      this.editing = true;
       this.drag = {
         mode: h.mode,
         clipId: c.id,
@@ -199,6 +202,14 @@ export class Timeline {
       };
     }
     this.dirty = true;
+  }
+
+  private endDrag(): void {
+    if (this.editing) {
+      this.editing = false;
+      this.project.endBatch();
+    }
+    this.drag = null;
   }
 
   /** The Mono/Stereo toggle in the bottom-left of a track header. */

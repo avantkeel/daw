@@ -71,6 +71,10 @@ Electron must stay removable by deleting `src/platform/electron/`, one line in
 - Times are in seconds. A `Clip` has `start` (timeline position), `offset` (in-point in the source),
   `duration` (length on timeline), `sourceDuration`, `fadeIn`, `fadeOut`.
 - Trimming changes `start/offset/duration` and never touches the audio data.
+- Undo/redo lives in `Project` (snapshots of the tracks; assets are not in history). Every mutating method goes
+  through the private `change()`, so one call = one undo step. Gestures that make many calls (dragging a clip, a drop that
+  adds a track and a clip) must wrap them in `beginBatch()`/`endBatch()` or `batch(fn)` to be a single step. New mutating
+  methods must use `change()`. `load()` clears history.
 - `Project` is the single source of truth. Mutate it only through its methods; each one emits
   `changed`. The UI and engine subscribe to that.
 - Decoded audio lives in `AssetStore` and is referenced by `assetId`. Never put `AudioBuffer`s in `core/`.
@@ -123,7 +127,7 @@ VS Code default dark look. Black/white/blue only, minimalist.
 
 ## Known limitations (fine to leave unless asked)
 
-- No undo/redo, no clip splitting, no unsaved-changes warning (New Project, Open and Exit discard the current project without asking).
+- Undo/redo covers track and clip edits only (not file-path changes from Copy Audio, not dropped assets); history is in memory, capped at 100 steps. No clip splitting, no unsaved-changes warning (New Project, Open and Exit discard the current project without asking).
 - Saved projects only contain the audio if the user ran Copy Audio to Project Folder; otherwise just references. If a source file is moved, its clips open silent.
 - In the browser build, projects can be saved and opened but audio can't be reloaded (no file paths).
 - Edits during playback restart playback from the current position after a ~120 ms debounce.

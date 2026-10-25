@@ -54,6 +54,8 @@ export function bootstrap(): void {
     (name) => (document.title = name ? `${name} - DAW` : 'DAW'),
   );
   const mod = /Mac/.test(navigator.platform) ? '⌘' : 'Ctrl+';
+  const undo = () => toolbar.setStatus(project.undo() ? 'Undo' : 'Nothing to undo');
+  const redo = () => toolbar.setStatus(project.redo() ? 'Redo' : 'Nothing to redo');
   new MenuBar(byId('menubar'), [
     {
       label: 'File',
@@ -66,6 +68,13 @@ export function bootstrap(): void {
         { label: 'Copy Audio to Project Folder', onSelect: () => void files.copyAudioToProject() },
         { separator: true },
         { label: 'Exit', shortcut: `${mod}Q`, onSelect: () => void platform.quit() },
+      ],
+    },
+    {
+      label: 'Edit',
+      items: [
+        { label: 'Undo', shortcut: `${mod}Z`, onSelect: undo },
+        { label: 'Redo', shortcut: `${mod}Y`, onSelect: redo },
       ],
     },
   ]);
@@ -89,15 +98,18 @@ export function bootstrap(): void {
         // otherwise (or when dropped elsewhere) make a new mono/stereo track to match.
         const channels = trackChannelsFor(asset.channels);
         const target = first && where.trackId ? project.getTracks().find((t) => t.id === where.trackId) : undefined;
-        const trackId =
-          target && target.channels === channels
-            ? target.id
-            : project.addTrack(file.name.replace(/\.[^.]+$/, ''), channels).id;
-        project.addClip(trackId, {
-          assetId: asset.assetId,
-          name: asset.name,
-          sourceDuration: asset.duration,
-          start: target ? where.time : 0,
+        // One undo step for the new track (if any) plus its clip.
+        project.batch(() => {
+          const trackId =
+            target && target.channels === channels
+              ? target.id
+              : project.addTrack(file.name.replace(/\.[^.]+$/, ''), channels).id;
+          project.addClip(trackId, {
+            assetId: asset.assetId,
+            name: asset.name,
+            sourceDuration: asset.duration,
+            start: target ? where.time : 0,
+          });
         });
         toolbar.setStatus(`Added ${asset.name} (${channels === 1 ? 'mono' : 'stereo'})`);
       } catch {
@@ -114,6 +126,8 @@ export function bootstrap(): void {
       else if (key === 'o') void files.open();
       else if (key === 's') void files.save(e.shiftKey);
       else if (key === 'q') void platform.quit();
+      else if (key === 'z' && !e.shiftKey) undo();
+      else if (key === 'y') redo();
       else return;
       e.preventDefault();
       return;
