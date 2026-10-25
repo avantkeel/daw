@@ -1,5 +1,6 @@
 import type { AudioEngine } from './audio/engine';
 import { parseProject, type ParsedSource } from './core/deserialize';
+import { relativeToFolder, resolveInFolder } from './core/paths';
 import type { Project } from './core/project';
 import { PROJECT_EXTENSION, serializeProject } from './core/serialize';
 import type { AssetRef, ClipData, TrackData } from './core/types';
@@ -7,6 +8,8 @@ import type { Platform, ProjectLocation } from './platform/platform';
 
 const APP_NAME = 'DAW';
 const APP_VERSION = '0.1.0';
+/** Folder inside the project folder that holds copied audio. */
+const AUDIO_FOLDER = 'Audio';
 
 interface LoadedAsset {
   ref: AssetRef;
@@ -45,7 +48,12 @@ export class ProjectFiles {
       const saved = await this.platform.saveProject({
         suggestedName: this.current?.name ?? 'Untitled',
         fileExtension: PROJECT_EXTENSION,
-        content: serializeProject(this.project, { appName: APP_NAME, appVersion: APP_VERSION }),
+        // Save As may move the project, so only a plain Save can safely write paths relative to the folder.
+        content: serializeProject(this.project, {
+          appName: APP_NAME,
+          appVersion: APP_VERSION,
+          projectFolder: saveAs ? undefined : this.current?.location,
+        }),
         existing: saveAs ? undefined : (this.current ?? undefined),
       });
       if (!saved) {
@@ -58,6 +66,34 @@ export class ProjectFiles {
     } catch (err) {
       this.onStatus(`Save failed: ${(err as Error).message}`);
     }
+  }
+
+  /**
+   * Copies every audio file that lives outside the project folder into `<project>/Audio/`,
+   * points the project at the copies and saves. Needs a saved project (so there is a folder).
+   */
+  async copyAudioToProject(): Promise<void> {
+    const folder = this.current;
+    if (!folder) {
+      this.onStatus('Save the project first, then copy its audio into the project folder.');
+      return;
+    }
+    let copied = 0;
+    let failed = 0;
+    for (const asset of this.project.getAssets()) {
+      if (!asset.path || relativeToFolder(asset.path, folder.location)) continue; // unknown location, or already inside
+      try {
+        const dest = await this.platform.copyFileIntoProject(folder, AUDIO_FOLDER, asset.path);
+        this.project.setAssetPath(asset.id, dest);
+        copied++;
+      } catch {
+        failed++;
+      }
+    }
+    if (copied > 0) await this.save();
+    const parts = [copied > 0 ? `Copied ${copied} audio file(s) to ${AUDIO_FOLDER}/` : 'No audio files needed copying'];
+    if (failed > 0) parts.push(`${failed} could not be copied (missing or unreadable)`);
+    this.onStatus(`${parts.join('. ')}.`);
   }
 
   async open(): Promise<void> {
@@ -82,7 +118,7 @@ export class ProjectFiles {
           const key = pc.source.path ?? pc.source.fileName;
           let asset = assets.get(key);
           if (!asset) {
-            asset = await this.loadAsset(pc.source);
+            asset = await this.loadAsset(pc.source, opened.location.location);
             assets.set(key, asset);
           }
           // The real file may differ from what was saved, so fit the clip to it.
@@ -120,17 +156,19 @@ export class ProjectFiles {
   }
 
   /** Loads the audio, or returns a silent placeholder so the clips (and their data) are kept. */
-  private async loadAsset(src: ParsedSource): Promise<LoadedAsset> {
-    if (src.path) {
+  private async loadAsset(src: ParsedSource, projectFolder: string): Promise<LoadedAsset> {
+    // Audio copied into the project folder is stored relative to it.
+    const path = src.path ? resolveInFolder(src.path, projectFolder) : undefined;
+    if (path) {
       try {
-        const data = await this.platform.readFile(src.path);
+        const data = await this.platform.readFile(path);
         const a = await this.engine.assets.importBuffer(data);
         return {
           loaded: true,
           ref: {
             id: a.assetId,
             fileName: src.fileName,
-            path: src.path,
+            path,
             duration: a.duration,
             sampleRate: a.sampleRate,
             channels: a.channels,
@@ -145,7 +183,7 @@ export class ProjectFiles {
       ref: {
         id: `missing_${++this.missingSeq}`,
         fileName: src.fileName,
-        path: src.path,
+        path,
         duration: src.duration,
         sampleRate: src.sampleRate,
         channels: src.channels,

@@ -88,16 +88,20 @@ Electron must stay removable by deleting `src/platform/electron/`, one line in
 - Serialization lives in `core/serialize.ts`, parsing in `core/deserialize.ts` (with a tiny parser in
   `core/xml.ts`). All pure, string in/out. File and folder I/O lives behind
   `Platform.saveProject`; the host is given the extension and content and knows nothing about the format.
-- Audio files are NOT copied into the project folder yet. Clips reference the original file as
-  `<File external="true">`, using its absolute path when the host knows it (`Platform.getFilePath`,
-  Electron only) and just the file name otherwise.
+- Audio files are NOT copied on import. Clips reference the original file as `<File external="true">`,
+  using its absolute path when the host knows it (`Platform.getFilePath`, Electron only) and just the file name otherwise.
+- File > Copy Audio to Project Folder (`ProjectFiles.copyAudioToProject`, needs a saved project) calls
+  `Platform.copyFileIntoProject` for every asset outside the project folder, copies it to `<project>/Audio/`
+  (never overwriting; clashes get a ` 2`, ` 3` suffix), repoints the asset and saves. Audio inside the project folder
+  is written as a path relative to it (`Audio/x.wav`, see `core/paths.ts`); Open resolves relative paths against
+  the project folder. Save As writes absolute paths, since the project is moving.
 - Opening replaces the current project (`Project.load`), re-reads each referenced audio file by absolute
   path via `Platform.readFile`, and decodes it. Files that can't be found become silent placeholder
   assets, so the clips and their data survive a re-save.
 - Track channel count is stored as `audioChannels` on the track's `<Channel>`; files without a usable value load as stereo.
 - When adding fields to `Project`/`Clip`/`Track`, update `core/serialize.ts`, `core/deserialize.ts`
   and `ProjectFiles.open`, and extend the round trip.
-- Electron's `readFile` IPC only reads audio extensions, so the renderer can't read arbitrary files.
+- Electron's `readFile` and `copyFileIntoProject` IPCs only accept audio extensions, so the renderer can't read or copy arbitrary files.
 
 ## Code conventions
 
@@ -120,7 +124,7 @@ VS Code default dark look. Black/white/blue only, minimalist.
 ## Known limitations (fine to leave unless asked)
 
 - No undo/redo, no clip splitting, no unsaved-changes warning (New Project, Open and Exit discard the current project without asking).
-- Saved projects don't contain the audio yet, only references. If a source file is moved, its clips open silent.
+- Saved projects only contain the audio if the user ran Copy Audio to Project Folder; otherwise just references. If a source file is moved, its clips open silent.
 - In the browser build, projects can be saved and opened but audio can't be reloaded (no file paths).
 - Edits during playback restart playback from the current position after a ~120 ms debounce.
 - No watch mode; rebuild with `pnpm build`.

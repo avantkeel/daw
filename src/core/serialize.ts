@@ -1,3 +1,4 @@
+import { relativeToFolder } from './paths';
 import type { Project } from './project';
 
 /** Extension of the project file written inside the project folder. */
@@ -49,7 +50,12 @@ function render(node: XmlNode, depth: number): string {
 export interface SerializeOptions {
   appName: string;
   appVersion: string;
+  /** Audio files inside this folder are written as paths relative to it, so the folder can be moved. */
+  projectFolder?: string;
 }
+
+const filePath = (path: string | undefined, folder: string | undefined): string | undefined =>
+  path && folder ? (relativeToFolder(path, folder) ?? path) : path;
 
 export function serializeProject(project: Project, opts: SerializeOptions): string {
   let n = 0;
@@ -98,7 +104,7 @@ export function serializeProject(project: Project, opts: SerializeOptions): stri
               sampleRate: asset?.sampleRate ?? 44100,
               id: id(),
             },
-            [x('File', { path: asset?.path ?? asset?.fileName ?? c.name, external: true })],
+            [x('File', { path: filePath(asset?.path, opts.projectFolder) ?? asset?.fileName ?? c.name, external: true })],
           ),
         ],
       );

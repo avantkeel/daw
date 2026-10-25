@@ -23,6 +23,10 @@ export class ElectronPlatform implements Platform {
     return this.bridge.readFile(path);
   }
 
+  copyFileIntoProject(project: ProjectLocation, subfolder: string, sourcePath: string): Promise<string> {
+    return this.bridge.copyFileIntoProject(project, subfolder, sourcePath);
+  }
+
   quit(): Promise<void> {
     return this.bridge.quit();
   }

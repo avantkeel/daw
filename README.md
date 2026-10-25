@@ -17,6 +17,7 @@ Drag audio in, move / trim / fade clips, play, export WAV. No MIDI, no plugins.
 - File > Exit / Ctrl+Q: quits the app
 - File > Open / Ctrl+O: opens a `.audioproject` and reloads its audio from the original file paths
 - File > Save / Save As, or Ctrl+S / Ctrl+Shift+S: saves `<name>/<name>.audioproject` (asks where on first save)
+- File > Copy Audio to Project Folder: copies audio used by the project into `<n>/Audio/` and saves (needs a saved project; desktop only)
 - Space: play/pause, Delete: remove selected clip, click ruler: seek
 - Ctrl+wheel: zoom, wheel: scroll, `M` on a track header: mute
 

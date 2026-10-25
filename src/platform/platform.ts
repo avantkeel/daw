@@ -36,6 +36,11 @@ export interface Platform {
   openProject(fileExtension: string): Promise<OpenedProject | null>;
   /** Reads a local file by absolute path (used to reload audio referenced by a project). */
   readFile(path: string): Promise<ArrayBuffer>;
+  /**
+   * Copies an audio file into `<project folder>/<subfolder>/` (never overwriting; a name clash gets a suffix).
+   * Returns the absolute path of the copy.
+   */
+  copyFileIntoProject(project: ProjectLocation, subfolder: string, sourcePath: string): Promise<string>;
   /** Absolute path of a dropped file, or undefined if the host can't tell (e.g. browsers). */
   getFilePath(file: File): string | undefined;
   /** Closes the application. */

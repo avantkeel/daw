@@ -38,6 +38,10 @@ export class WebPlatform implements Platform {
     throw new Error('Reading local files is not supported in the browser');
   }
 
+  async copyFileIntoProject(): Promise<string> {
+    throw new Error('Copying files into the project folder is not supported in the browser');
+  }
+
   getFilePath(): string | undefined {
     return undefined;
   }

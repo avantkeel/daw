@@ -1,8 +1,8 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
-import { promises as fs } from 'node:fs';
+import { constants as fsConstants, promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { OpenedProject, ProjectLocation, SaveProjectRequest } from '../platform';
-import { IPC_OPEN_PROJECT, IPC_QUIT, IPC_READ_FILE, IPC_SAVE_FILE, IPC_SAVE_PROJECT } from './ipc-channels';
+import { IPC_COPY_TO_PROJECT, IPC_OPEN_PROJECT, IPC_QUIT, IPC_READ_FILE, IPC_SAVE_FILE, IPC_SAVE_PROJECT } from './ipc-channels';
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -83,6 +83,27 @@ ipcMain.handle(IPC_READ_FILE, async (_event, filePath: string): Promise<ArrayBuf
   const buf = await fs.readFile(filePath);
   return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
 });
+
+// Copies an audio file to <project folder>/<subfolder>/, keeping its name (or adding " 2", " 3", ...).
+ipcMain.handle(
+  IPC_COPY_TO_PROJECT,
+  async (_event, project: ProjectLocation, subfolder: string, sourcePath: string): Promise<string> => {
+    const ext = path.extname(sourcePath);
+    if (!READABLE_AUDIO.has(ext.toLowerCase())) throw new Error('Not an audio file');
+    const dir = path.join(project.location, path.basename(subfolder));
+    await fs.mkdir(dir, { recursive: true });
+    const stem = path.basename(sourcePath, ext);
+    for (let n = 1; ; n++) {
+      const dest = path.join(dir, n === 1 ? `${stem}${ext}` : `${stem} ${n}${ext}`);
+      try {
+        await fs.copyFile(sourcePath, dest, fsConstants.COPYFILE_EXCL);
+        return dest;
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
+      }
+    }
+  },
+);
 
 ipcMain.handle(IPC_QUIT, () => app.quit());
 

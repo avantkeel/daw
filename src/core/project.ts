@@ -42,6 +42,18 @@ export class Project {
     this.assets.set(ref.id, ref);
   }
 
+  getAssets(): AssetRef[] {
+    return [...this.assets.values()];
+  }
+
+  /** Points an asset at a different file (e.g. after copying it into the project folder). */
+  setAssetPath(id: Id, path: string): void {
+    const a = this.assets.get(id);
+    if (!a) return;
+    a.path = path;
+    this.changed.emit();
+  }
+
   getAsset(id: Id): AssetRef | undefined {
     return this.assets.get(id);
   }

@@ -63,6 +63,8 @@ export function bootstrap(): void {
         { label: 'Save', shortcut: `${mod}S`, onSelect: () => void files.save() },
         { label: 'Save As…', shortcut: `${mod}Shift+S`, onSelect: () => void files.save(true) },
         { separator: true },
+        { label: 'Copy Audio to Project Folder', onSelect: () => void files.copyAudioToProject() },
+        { separator: true },
         { label: 'Exit', shortcut: `${mod}Q`, onSelect: () => void platform.quit() },
       ],
     },

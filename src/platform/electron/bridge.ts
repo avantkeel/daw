@@ -6,6 +6,7 @@ export interface DawBridge {
   saveProject(request: SaveProjectRequest): Promise<ProjectLocation | null>;
   openProject(fileExtension: string): Promise<OpenedProject | null>;
   readFile(path: string): Promise<ArrayBuffer>;
+  copyFileIntoProject(project: ProjectLocation, subfolder: string, sourcePath: string): Promise<string>;
   getFilePath(file: File): string;
   quit(): Promise<void>;
 }
