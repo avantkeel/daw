@@ -5,6 +5,7 @@ import type { Project } from './core/project';
 import { PROJECT_EXTENSION, serializeProject } from './core/serialize';
 import type { AssetRef, ClipData, TrackData } from './core/types';
 import type { Platform, ProjectLocation } from './platform/platform';
+import { askUnsavedChanges } from './ui/dialog';
 
 const APP_NAME = 'DAW';
 const APP_VERSION = '0.1.0';
@@ -23,23 +24,66 @@ interface LoadedAsset {
 export class ProjectFiles {
   private current: ProjectLocation | null = null;
   private missingSeq = 0;
+  private dirty = false;
 
   constructor(
     private project: Project,
     private engine: AudioEngine,
     private platform: Platform,
     private onStatus: (message: string) => void,
-    /** `null` means an unsaved, unnamed project. */
-    private onNameChange: (name: string | null) => void,
-  ) {}
+    /** `name` is null for an unsaved, unnamed project. `dirty` means there are unsaved changes. */
+    private onTitleChange: (name: string | null, dirty: boolean) => void,
+  ) {
+    // Any edit makes the project dirty. Saving, opening and New Project reset it afterwards.
+    project.changed.subscribe(() => this.setDirty(true));
+  }
+
+  private setDirty(dirty: boolean): void {
+    if (this.dirty === dirty) return;
+    this.dirty = dirty;
+    this.platform.setDirty(dirty);
+    this.updateTitle();
+  }
+
+  private updateTitle(): void {
+    this.onTitleChange(this.current?.name ?? null, this.dirty);
+  }
+
+  /**
+   * If there are unsaved changes, asks whether to save them. Returns true when it is fine to go on
+   * (nothing to save, saved, or the user chose Don't Save) and false if the user cancelled
+   * or the save didn't happen.
+   */
+  private async confirmDiscard(): Promise<boolean> {
+    if (!this.dirty) return true;
+    const choice = await askUnsavedChanges(this.current?.name ?? 'Untitled');
+    if (choice === 'cancel') return false;
+    if (choice === 'save') {
+      await this.save();
+      return !this.dirty; // still dirty = save was cancelled or failed
+    }
+    return true;
+  }
+
+  /** Quits the app, after offering to save unsaved changes. */
+  async exit(): Promise<void> {
+    if (!(await this.confirmDiscard())) return;
+    this.setDirty(false); // so the host doesn't ask a second time
+    await this.platform.quit();
+  }
 
   /** Discards the current project and starts an empty one. */
-  newProject(): void {
+  async newProject(): Promise<void> {
+    if (!(await this.confirmDiscard())) {
+      this.onStatus('New project cancelled');
+      return;
+    }
     this.engine.stop();
     this.engine.assets.clear();
     this.project.load([], []);
     this.current = null;
-    this.onNameChange(null);
+    this.setDirty(false);
+    this.updateTitle();
     this.onStatus('New project');
   }
 
@@ -61,7 +105,8 @@ export class ProjectFiles {
         return;
       }
       this.current = saved;
-      this.onNameChange(saved.name);
+      this.setDirty(false);
+      this.updateTitle();
       this.onStatus(`Saved ${saved.location}`);
     } catch (err) {
       this.onStatus(`Save failed: ${(err as Error).message}`);
@@ -104,6 +149,10 @@ export class ProjectFiles {
         return;
       }
       const parsed = parseProject(opened.content);
+      if (!(await this.confirmDiscard())) {
+        this.onStatus('Open cancelled');
+        return;
+      }
       this.onStatus(`Opening ${opened.location.name}…`);
 
       this.engine.stop();
@@ -142,7 +191,8 @@ export class ProjectFiles {
       const all = [...assets.values()];
       this.project.load(tracks, all.map((a) => a.ref));
       this.current = opened.location;
-      this.onNameChange(opened.location.name);
+      this.setDirty(false);
+      this.updateTitle();
 
       const missing = all.filter((a) => !a.loaded).length;
       this.onStatus(

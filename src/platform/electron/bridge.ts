@@ -8,6 +8,8 @@ export interface DawBridge {
   readFile(path: string): Promise<ArrayBuffer>;
   copyFileIntoProject(project: ProjectLocation, subfolder: string, sourcePath: string): Promise<string>;
   getFilePath(file: File): string;
+  setDirty(dirty: boolean): void;
+  onCloseRequested(handler: () => void): void;
   quit(): Promise<void>;
 }
 

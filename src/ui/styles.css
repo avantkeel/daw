@@ -120,3 +120,25 @@ button.primary:hover { background: var(--accent-hover); }
   margin: 4px 0;
   background: var(--border);
 }
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.modal {
+  width: 420px;
+  max-width: calc(100% - 32px);
+  padding: 16px;
+  background: var(--panel);
+  border: 1px solid #454545;
+}
+
+.modal-title { color: #fff; font-size: 14px; margin-bottom: 8px; }
+.modal-text { margin-bottom: 16px; }
+.modal-buttons { display: flex; justify-content: flex-end; gap: 6px; }

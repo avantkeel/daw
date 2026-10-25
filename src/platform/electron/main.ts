@@ -2,7 +2,11 @@ import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { constants as fsConstants, promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { OpenedProject, ProjectLocation, SaveProjectRequest } from '../platform';
-import { IPC_COPY_TO_PROJECT, IPC_OPEN_PROJECT, IPC_QUIT, IPC_READ_FILE, IPC_SAVE_FILE, IPC_SAVE_PROJECT } from './ipc-channels';
+import { IPC_CLOSE_REQUESTED, IPC_COPY_TO_PROJECT, IPC_OPEN_PROJECT, IPC_QUIT, IPC_READ_FILE, IPC_SAVE_FILE, IPC_SAVE_PROJECT, IPC_SET_DIRTY } from './ipc-channels';
+
+// Unsaved changes: closing the window is handed to the renderer, which asks the user and then calls quit.
+let dirty = false;
+let forceClose = false;
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -17,6 +21,11 @@ function createWindow(): void {
       nodeIntegration: false,
       sandbox: true,
     },
+  });
+  win.on('close', (event) => {
+    if (forceClose || !dirty) return;
+    event.preventDefault();
+    win.webContents.send(IPC_CLOSE_REQUESTED);
   });
   void win.loadFile(path.join(__dirname, 'index.html'));
 }
@@ -105,7 +114,14 @@ ipcMain.handle(
   },
 );
 
-ipcMain.handle(IPC_QUIT, () => app.quit());
+ipcMain.on(IPC_SET_DIRTY, (_event, value: boolean) => {
+  dirty = value === true;
+});
+
+ipcMain.handle(IPC_QUIT, () => {
+  forceClose = true;
+  app.quit();
+});
 
 app.whenReady().then(() => {
   createWindow();

@@ -51,8 +51,9 @@ export function bootstrap(): void {
     engine,
     platform,
     (msg) => toolbar.setStatus(msg),
-    (name) => (document.title = name ? `${name} - DAW` : 'DAW'),
+    (name, dirty) => (document.title = `${dirty ? '* ' : ''}${name ? `${name} - DAW` : 'DAW'}`),
   );
+  platform.onCloseRequested(() => void files.exit());
   const mod = /Mac/.test(navigator.platform) ? '⌘' : 'Ctrl+';
   const undo = () => toolbar.setStatus(project.undo() ? 'Undo' : 'Nothing to undo');
   const redo = () => toolbar.setStatus(project.redo() ? 'Redo' : 'Nothing to redo');
@@ -64,14 +65,14 @@ export function bootstrap(): void {
     {
       label: 'File',
       items: [
-        { label: 'New Project', shortcut: `${mod}N`, onSelect: () => files.newProject() },
+        { label: 'New Project', shortcut: `${mod}N`, onSelect: () => void files.newProject() },
         { label: 'Open…', shortcut: `${mod}O`, onSelect: () => void files.open() },
         { label: 'Save', shortcut: `${mod}S`, onSelect: () => void files.save() },
         { label: 'Save As…', shortcut: `${mod}Shift+S`, onSelect: () => void files.save(true) },
         { separator: true },
         { label: 'Copy Audio to Project Folder', onSelect: () => void files.copyAudioToProject() },
         { separator: true },
-        { label: 'Exit', shortcut: `${mod}Q`, onSelect: () => void platform.quit() },
+        { label: 'Exit', shortcut: `${mod}Q`, onSelect: () => void files.exit() },
       ],
     },
     {
@@ -133,10 +134,10 @@ export function bootstrap(): void {
   window.addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.metaKey) {
       const key = e.key.toLowerCase();
-      if (key === 'n') files.newProject();
+      if (key === 'n') void files.newProject();
       else if (key === 'o') void files.open();
       else if (key === 's') void files.save(e.shiftKey);
-      else if (key === 'q') void platform.quit();
+      else if (key === 'q') void files.exit();
       else if (key === 'z' && !e.shiftKey) undo();
       else if (key === 'y') redo();
       else return;

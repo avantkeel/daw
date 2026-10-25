@@ -86,7 +86,13 @@ Electron must stay removable by deleting `src/platform/electron/`, one line in
 - Saving creates a folder named after the project, containing `<name>.audioproject`
   (`<chosen path>/<name>/<name>.audioproject`). First save or Save As asks where; later saves overwrite silently.
 - Triggers: File menu (New Project, Open, Save, Save As, Exit), Ctrl/Cmd+N, +O, +S, +Shift+S, +Q.
-- New Project resets the project, assets and save location. Exit goes through `Platform.quit()`.
+- New Project resets the project, assets and save location. Exit goes through `ProjectFiles.exit()` then `Platform.quit()`.
+- Unsaved changes: `ProjectFiles` marks the project dirty on every `Project.changed` and clears it on save, open and
+  New Project. New Project, Open (after the file is chosen) and Exit call `confirmDiscard()`, which shows the in-app
+  Save / Don't Save / Cancel dialog (`ui/dialog.ts`). The window title gets a `* ` prefix while dirty.
+- Closing the window: `Platform.setDirty()` tells the host about unsaved changes. Electron's main process then cancels the
+  window `close`, sends `daw:close-requested`, and the renderer runs `ProjectFiles.exit()`; `quit` sets `forceClose` so
+  it can't be blocked again. The browser uses a generic `beforeunload` prompt (it can't be customised).
 - The file is XML modelled on the DAWproject `project.xml` (Application, Transport, Structure, Arrangement).
   It is "similar to", not conformant with, DAWproject: no zip container, no `metadata.xml`.
 - Serialization lives in `core/serialize.ts`, parsing in `core/deserialize.ts` (with a tiny parser in
@@ -127,7 +133,7 @@ VS Code default dark look. Black/white/blue only, minimalist.
 
 ## Known limitations (fine to leave unless asked)
 
-- Undo/redo covers track and clip edits only (not file-path changes from Copy Audio, not dropped assets); history is in memory, capped at 100 steps. No clip splitting, no unsaved-changes warning (New Project, Open and Exit discard the current project without asking).
+- Undo/redo covers track and clip edits only (not file-path changes from Copy Audio, not dropped assets); history is in memory, capped at 100 steps. No clip splitting. The dirty flag is "any edit since the last save", so undoing back to the saved state still counts as unsaved.
 - Saved projects only contain the audio if the user ran Copy Audio to Project Folder; otherwise just references. If a source file is moved, its clips open silent.
 - In the browser build, projects can be saved and opened but audio can't be reloaded (no file paths).
 - Edits during playback restart playback from the current position after a ~120 ms debounce.

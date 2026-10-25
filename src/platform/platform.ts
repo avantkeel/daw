@@ -43,6 +43,15 @@ export interface Platform {
   copyFileIntoProject(project: ProjectLocation, subfolder: string, sourcePath: string): Promise<string>;
   /** Absolute path of a dropped file, or undefined if the host can't tell (e.g. browsers). */
   getFilePath(file: File): string | undefined;
+  /**
+   * Tells the host whether there are unsaved changes, so it can guard against the window or tab being closed.
+   */
+  setDirty(dirty: boolean): void;
+  /**
+   * The host calls `handler` when the user tries to close the window while there are unsaved changes (desktop).
+   * The app decides what to do and calls `quit()` when it is fine to close. Browsers show their own prompt instead.
+   */
+  onCloseRequested(handler: () => void): void;
   /** Closes the application. */
   quit(): Promise<void>;
 }

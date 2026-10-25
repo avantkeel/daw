@@ -27,6 +27,14 @@ export class ElectronPlatform implements Platform {
     return this.bridge.copyFileIntoProject(project, subfolder, sourcePath);
   }
 
+  setDirty(dirty: boolean): void {
+    this.bridge.setDirty(dirty);
+  }
+
+  onCloseRequested(handler: () => void): void {
+    this.bridge.onCloseRequested(handler);
+  }
+
   quit(): Promise<void> {
     return this.bridge.quit();
   }

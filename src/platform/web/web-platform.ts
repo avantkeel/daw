@@ -3,6 +3,23 @@ import type { OpenedProject, Platform, ProjectLocation, SaveProjectRequest } fro
 /** Browser fallback: triggers normal downloads. Also proves the app doesn't need Electron. */
 export class WebPlatform implements Platform {
   readonly name = 'web';
+  private dirty = false;
+
+  constructor() {
+    // Browsers only allow a generic "leave site?" prompt, not a custom one.
+    window.addEventListener('beforeunload', (e) => {
+      if (!this.dirty) return;
+      e.preventDefault();
+      e.returnValue = '';
+    });
+  }
+
+  setDirty(dirty: boolean): void {
+    this.dirty = dirty;
+  }
+
+  /** Never called: the browser handles closing itself (see the constructor). */
+  onCloseRequested(): void {}
 
   async saveFile(suggestedName: string, data: ArrayBuffer): Promise<boolean> {
     this.download(suggestedName, new Blob([data], { type: 'audio/wav' }));

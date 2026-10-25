@@ -3,4 +3,6 @@ export const IPC_SAVE_PROJECT = 'daw:save-project';
 export const IPC_OPEN_PROJECT = 'daw:open-project';
 export const IPC_READ_FILE = 'daw:read-file';
 export const IPC_COPY_TO_PROJECT = 'daw:copy-to-project';
+export const IPC_SET_DIRTY = 'daw:set-dirty';
+export const IPC_CLOSE_REQUESTED = 'daw:close-requested';
 export const IPC_QUIT = 'daw:quit';
