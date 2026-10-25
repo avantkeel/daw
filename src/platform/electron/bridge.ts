@@ -7,6 +7,7 @@ export interface DawBridge {
   openProject(fileExtension: string): Promise<OpenedProject | null>;
   readFile(path: string): Promise<ArrayBuffer>;
   getFilePath(file: File): string;
+  quit(): Promise<void>;
 }
 
 declare global {

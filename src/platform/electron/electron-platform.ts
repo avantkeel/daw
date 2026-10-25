@@ -23,6 +23,10 @@ export class ElectronPlatform implements Platform {
     return this.bridge.readFile(path);
   }
 
+  quit(): Promise<void> {
+    return this.bridge.quit();
+  }
+
   getFilePath(file: File): string | undefined {
     try {
       return this.bridge.getFilePath(file) || undefined;

@@ -42,6 +42,11 @@ export class WebPlatform implements Platform {
     return undefined;
   }
 
+  /** Browsers only allow closing windows that scripts opened, so this may do nothing. */
+  async quit(): Promise<void> {
+    window.close();
+  }
+
   private download(fileName: string, blob: Blob): void {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

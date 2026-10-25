@@ -50,16 +50,19 @@ export function bootstrap(): void {
     engine,
     platform,
     (msg) => toolbar.setStatus(msg),
-    (name) => (document.title = `${name} - DAW`),
+    (name) => (document.title = name ? `${name} - DAW` : 'DAW'),
   );
   const mod = /Mac/.test(navigator.platform) ? '⌘' : 'Ctrl+';
   new MenuBar(byId('menubar'), [
     {
       label: 'File',
       items: [
+        { label: 'New Project', shortcut: `${mod}N`, onSelect: () => files.newProject() },
         { label: 'Open…', shortcut: `${mod}O`, onSelect: () => void files.open() },
         { label: 'Save', shortcut: `${mod}S`, onSelect: () => void files.save() },
         { label: 'Save As…', shortcut: `${mod}Shift+S`, onSelect: () => void files.save(true) },
+        { separator: true },
+        { label: 'Exit', shortcut: `${mod}Q`, onSelect: () => void platform.quit() },
       ],
     },
   ]);
@@ -96,14 +99,14 @@ export function bootstrap(): void {
   });
 
   window.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+    if (e.ctrlKey || e.metaKey) {
+      const key = e.key.toLowerCase();
+      if (key === 'n') files.newProject();
+      else if (key === 'o') void files.open();
+      else if (key === 's') void files.save(e.shiftKey);
+      else if (key === 'q') void platform.quit();
+      else return;
       e.preventDefault();
-      void files.save(e.shiftKey);
-      return;
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o') {
-      e.preventDefault();
-      void files.open();
       return;
     }
     if (e.code === 'Space') {

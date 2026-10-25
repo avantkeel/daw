@@ -114,3 +114,9 @@ button.primary:hover { background: var(--accent-hover); }
 .menu-item:hover { background: var(--accent); color: #fff; }
 .menu-shortcut { color: #858585; }
 .menu-item:hover .menu-shortcut { color: #fff; }
+
+.menu-separator {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--border);
+}

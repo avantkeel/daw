@@ -78,7 +78,8 @@ Electron must stay removable by deleting `src/platform/electron/`, one line in
 
 - Saving creates a folder named after the project, containing `<name>.audioproject`
   (`<chosen path>/<name>/<name>.audioproject`). First save or Save As asks where; later saves overwrite silently.
-- Triggers: File menu (Open, Save, Save As), Ctrl/Cmd+O, Ctrl/Cmd+S, Ctrl/Cmd+Shift+S.
+- Triggers: File menu (New Project, Open, Save, Save As, Exit), Ctrl/Cmd+N, +O, +S, +Shift+S, +Q.
+- New Project resets the project, assets and save location. Exit goes through `Platform.quit()`.
 - The file is XML modelled on the DAWproject `project.xml` (Application, Transport, Structure, Arrangement).
   It is "similar to", not conformant with, DAWproject: no zip container, no `metadata.xml`.
 - Serialization lives in `core/serialize.ts`, parsing in `core/deserialize.ts` (with a tiny parser in
@@ -114,7 +115,7 @@ VS Code default dark look. Black/white/blue only, minimalist.
 
 ## Known limitations (fine to leave unless asked)
 
-- No undo/redo, no clip splitting, no unsaved-changes warning (Open replaces the current project without asking).
+- No undo/redo, no clip splitting, no unsaved-changes warning (New Project, Open and Exit discard the current project without asking).
 - Saved projects don't contain the audio yet, only references. If a source file is moved, its clips open silent.
 - In the browser build, projects can be saved and opened but audio can't be reloaded (no file paths).
 - Edits during playback restart playback from the current position after a ~120 ms debounce.

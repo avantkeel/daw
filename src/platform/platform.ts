@@ -38,4 +38,6 @@ export interface Platform {
   readFile(path: string): Promise<ArrayBuffer>;
   /** Absolute path of a dropped file, or undefined if the host can't tell (e.g. browsers). */
   getFilePath(file: File): string | undefined;
+  /** Closes the application. */
+  quit(): Promise<void>;
 }

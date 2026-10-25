@@ -26,8 +26,19 @@ export class ProjectFiles {
     private engine: AudioEngine,
     private platform: Platform,
     private onStatus: (message: string) => void,
-    private onNameChange: (name: string) => void,
+    /** `null` means an unsaved, unnamed project. */
+    private onNameChange: (name: string | null) => void,
   ) {}
+
+  /** Discards the current project and starts an empty one. */
+  newProject(): void {
+    this.engine.stop();
+    this.engine.assets.clear();
+    this.project.load([], []);
+    this.current = null;
+    this.onNameChange(null);
+    this.onStatus('New project');
+  }
 
   async save(saveAs = false): Promise<void> {
     try {

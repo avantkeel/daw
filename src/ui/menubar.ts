@@ -4,9 +4,13 @@ export interface MenuItem {
   onSelect(): void;
 }
 
+export interface MenuSeparator {
+  separator: true;
+}
+
 export interface Menu {
   label: string;
-  items: MenuItem[];
+  items: (MenuItem | MenuSeparator)[];
 }
 
 interface OpenMenu {
@@ -33,6 +37,12 @@ export class MenuBar {
       list.hidden = true;
 
       for (const item of menu.items) {
+        if ('separator' in item) {
+          const line = document.createElement('div');
+          line.className = 'menu-separator';
+          list.append(line);
+          continue;
+        }
         const row = document.createElement('button');
         row.className = 'menu-item';
         const label = document.createElement('span');

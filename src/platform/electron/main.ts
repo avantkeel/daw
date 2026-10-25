@@ -2,7 +2,7 @@ import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { OpenedProject, ProjectLocation, SaveProjectRequest } from '../platform';
-import { IPC_OPEN_PROJECT, IPC_READ_FILE, IPC_SAVE_FILE, IPC_SAVE_PROJECT } from './ipc-channels';
+import { IPC_OPEN_PROJECT, IPC_QUIT, IPC_READ_FILE, IPC_SAVE_FILE, IPC_SAVE_PROJECT } from './ipc-channels';
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -83,6 +83,8 @@ ipcMain.handle(IPC_READ_FILE, async (_event, filePath: string): Promise<ArrayBuf
   const buf = await fs.readFile(filePath);
   return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
 });
+
+ipcMain.handle(IPC_QUIT, () => app.quit());
 
 app.whenReady().then(() => {
   createWindow();
