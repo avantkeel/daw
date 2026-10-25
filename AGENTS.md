@@ -65,9 +65,13 @@ Electron must stay removable by deleting `src/platform/electron/`, one line in
 
 ## Data model notes
 
+- Mono audio lives on mono tracks, stereo on stereo tracks. `Project.accepts(trackId, assetId)` is the rule; `moveClip`
+  ignores a track change that fails it (the clip still moves in time) and `setChannels` ignores tracks that have clips.
+- `Peaks.channels` has one array per displayed channel (1 for mono, 2 for stereo), and the timeline draws one lane per array.
 - A `Track` has `channels: 1 | 2` (mono or stereo). Importing a file picks it via `trackChannelsFor(asset.channels)`
-  (mono -> 1, anything wider -> 2). `audio/scheduler.ts` forces the track's gain node to that layout
-  (`channelCountMode: 'explicit'`), so clips are up/downmixed to match the track, in playback and export alike.
+  (mono -> 1, anything wider -> 2). `audio/scheduler.ts` also forces the track's gain node to that layout
+  (`channelCountMode: 'explicit'`); that only matters as a safety net (e.g. a project file that already has mismatched clips),
+  since the editor itself never puts a clip on a track with a different layout.
 - Times are in seconds. A `Clip` has `start` (timeline position), `offset` (in-point in the source),
   `duration` (length on timeline), `sourceDuration`, `fadeIn`, `fadeOut`.
 - Trimming changes `start/offset/duration` and never touches the audio data.

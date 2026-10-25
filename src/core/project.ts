@@ -1,5 +1,5 @@
 import { Emitter } from './emitter';
-import type { AssetRef, ChannelCount, Clip, Id, Track, TrackData } from './types';
+import { trackChannelsFor, type AssetRef, type ChannelCount, type Clip, type Id, type Track, type TrackData } from './types';
 
 const MIN_CLIP = 0.01;
 const MAX_HISTORY = 100;
@@ -158,6 +158,13 @@ export class Project {
     return undefined;
   }
 
+  /** A track only takes audio with its own channel layout: mono on mono tracks, stereo on stereo tracks. */
+  accepts(trackId: Id, assetId: Id): boolean {
+    const track = this.tracks.find((t) => t.id === trackId);
+    const asset = this.assets.get(assetId);
+    return !!track && !!asset && track.channels === trackChannelsFor(asset.channels);
+  }
+
   // ---------- edits ----------
 
   addTrack(name = `Track ${this.tracks.length + 1}`, channels: ChannelCount = 2): Track {
@@ -170,7 +177,7 @@ export class Project {
 
   setChannels(trackId: Id, channels: ChannelCount): void {
     const t = this.tracks.find((x) => x.id === trackId);
-    if (!t || t.channels === channels) return;
+    if (!t || t.channels === channels || t.clips.length > 0) return; // a track with audio keeps its layout
     this.change(() => (t.channels = channels));
   }
 
@@ -208,6 +215,7 @@ export class Project {
     });
   }
 
+  /** Moves a clip in time and, if `trackId` can take its audio (see `accepts`), to that track. Otherwise it stays on its track. */
   moveClip(id: Id, start: number, trackId?: Id): void {
     const found = this.findClip(id);
     if (!found) return;
@@ -215,7 +223,7 @@ export class Project {
       found.clip.start = Math.max(0, start);
       if (trackId && trackId !== found.track.id) {
         const dest = this.tracks.find((t) => t.id === trackId);
-        if (dest) {
+        if (dest && this.accepts(dest.id, found.clip.assetId)) {
           found.track.clips = found.track.clips.filter((c) => c.id !== id);
           dest.clips.push(found.clip);
         }

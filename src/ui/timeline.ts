@@ -246,6 +246,8 @@ export class Timeline {
       case 'move': {
         const tracks = this.project.getTracks();
         const ti = Math.min(tracks.length - 1, Math.max(0, this.trackIndexAt(y)));
+        const assetId = this.project.findClip(d.clipId)?.clip.assetId;
+        this.canvas.style.cursor = assetId && this.project.accepts(tracks[ti].id, assetId) ? 'grabbing' : 'not-allowed';
         this.project.moveClip(d.clipId, d.start + dt, tracks[ti].id);
         break;
       }
@@ -416,8 +418,11 @@ export class Timeline {
 
       // Mono / Stereo toggle
       const cy = y + TRACK_H - 28;
-      g.strokeStyle = C.border;
-      g.strokeRect(10.5, cy + 0.5, CH_BTN_W - 1, 17);
+      if (t.clips.length === 0) {
+        // Only an empty track can change layout; a track with audio just shows its label.
+        g.strokeStyle = C.border;
+        g.strokeRect(10.5, cy + 0.5, CH_BTN_W - 1, 17);
+      }
       g.fillStyle = C.dim;
       g.fillText(t.channels === 1 ? 'Mono' : 'Stereo', 17, cy + 13);
     });
@@ -487,13 +492,13 @@ export class Timeline {
     g.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
   }
 
+  /** Waveform: one lane for mono audio, two stacked lanes (left on top, right below) for stereo. */
   private drawWave(c: Clip, r: { x: number; y: number; w: number; h: number }): void {
     const p = this.peaks.getPeaks(c.assetId);
     if (!p) return;
     const g = this.g;
     const top = r.y + TITLE_H;
-    const hh = r.h - TITLE_H;
-    const mid = top + hh / 2;
+    const laneH = (r.h - TITLE_H) / p.channels.length;
     const secPerBlock = p.blockSize / p.sampleRate;
     const x0 = Math.max(Math.floor(r.x), HEADER_W);
     const x1 = Math.min(Math.ceil(r.x + r.w), this.w);
@@ -501,17 +506,25 @@ export class Timeline {
     g.strokeStyle = C.wave;
     g.lineWidth = 1;
     g.beginPath();
-    for (let x = x0; x < x1; x++) {
-      const t0 = c.offset + (x - r.x) / this.pps;
-      const t1 = t0 + 1 / this.pps;
-      const b0 = Math.max(0, Math.floor(t0 / secPerBlock));
-      const b1 = Math.min(p.data.length - 1, Math.max(b0, Math.floor(t1 / secPerBlock)));
-      let m = 0;
-      for (let b = b0; b <= b1; b++) if (p.data[b] > m) m = p.data[b];
-      const a = m * (hh / 2) * 0.95;
-      g.moveTo(x + 0.5, mid - a);
-      g.lineTo(x + 0.5, mid + a);
-    }
+    p.channels.forEach((data, lane) => {
+      const mid = top + laneH * lane + laneH / 2;
+      for (let x = x0; x < x1; x++) {
+        const t0 = c.offset + (x - r.x) / this.pps;
+        const t1 = t0 + 1 / this.pps;
+        const b0 = Math.max(0, Math.floor(t0 / secPerBlock));
+        const b1 = Math.min(data.length - 1, Math.max(b0, Math.floor(t1 / secPerBlock)));
+        let m = 0;
+        for (let b = b0; b <= b1; b++) if (data[b] > m) m = data[b];
+        const a = m * (laneH / 2) * 0.95;
+        g.moveTo(x + 0.5, mid - a);
+        g.lineTo(x + 0.5, mid + a);
+      }
+    });
     g.stroke();
+
+    if (p.channels.length > 1) {
+      g.fillStyle = 'rgba(0, 0, 0, 0.35)';
+      g.fillRect(x0, Math.round(top + laneH), x1 - x0, 1);
+    }
   }
 }

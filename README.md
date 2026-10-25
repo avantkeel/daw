@@ -9,7 +9,9 @@ Drag audio in, move / trim / fade clips, play, export WAV. No MIDI, no plugins.
 ## Controls
 - Drop audio files on the timeline. Mono files make mono tracks, stereo files make stereo tracks.
   Dropped on a lane with the same layout = that track at that time; on a lane with a different layout or elsewhere = new track
-- Click the Mono/Stereo label in a track header to switch that track's layout
+- Stereo audio shows two waveforms (left on top, right below); mono shows one
+- Mono audio only goes on mono tracks and stereo audio only on stereo tracks: dragging a clip onto the other kind of track leaves it where it was (the cursor shows a not-allowed sign)
+- Click the Mono/Stereo label (boxed when the track is empty) in a track header to switch that track's layout
 - Drag clip body: move (also between tracks)
 - Drag clip left/right edge: trim
 - Drag the white square handles at the top corners: fade in / fade out
