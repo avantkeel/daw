@@ -19,8 +19,9 @@ Drag audio in, move / trim / fade clips, play, export WAV. No MIDI, no plugins.
 - File > Save / Save As, or Ctrl+S / Ctrl+Shift+S: saves `<name>/<name>.audioproject` (asks where on first save)
 - File > Copy Audio to Project Folder: copies audio used by the project into `<n>/Audio/` and saves (needs a saved project; desktop only)
 - Edit > Undo / Redo, or Ctrl/Cmd+Z / Ctrl/Cmd+Y: undo and redo clip and track edits (a whole drag is one step)
+- Track > New Mono Track / New Stereo Track: adds an empty track (drop audio on its lane later)
 - Space: play/pause, Delete: remove selected clip, click ruler: seek
-- Ctrl+wheel: zoom, wheel: scroll, `M` on a track header: mute
+- Ctrl+wheel: zoom, wheel: scroll tracks vertically, Shift+wheel: scroll horizontally, `M` on a track header: mute
 
 ## Architecture (dependencies point downward only)
 

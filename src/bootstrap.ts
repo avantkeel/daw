@@ -56,6 +56,10 @@ export function bootstrap(): void {
   const mod = /Mac/.test(navigator.platform) ? '⌘' : 'Ctrl+';
   const undo = () => toolbar.setStatus(project.undo() ? 'Undo' : 'Nothing to undo');
   const redo = () => toolbar.setStatus(project.redo() ? 'Redo' : 'Nothing to redo');
+  const newTrack = (channels: 1 | 2) => {
+    const track = project.addTrack(undefined, channels);
+    toolbar.setStatus(`Added ${track.name} (${channels === 1 ? 'mono' : 'stereo'})`);
+  };
   new MenuBar(byId('menubar'), [
     {
       label: 'File',
@@ -75,6 +79,13 @@ export function bootstrap(): void {
       items: [
         { label: 'Undo', shortcut: `${mod}Z`, onSelect: undo },
         { label: 'Redo', shortcut: `${mod}Y`, onSelect: redo },
+      ],
+    },
+    {
+      label: 'Track',
+      items: [
+        { label: 'New Mono Track', onSelect: () => newTrack(1) },
+        { label: 'New Stereo Track', onSelect: () => newTrack(2) },
       ],
     },
   ]);

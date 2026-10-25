@@ -48,6 +48,7 @@ export class Timeline {
   private g: CanvasRenderingContext2D;
   private pps = 100; // pixels per second
   private scrollX = 0; // seconds
+  private scrollY = 0; // pixels, 0..maxScrollY()
   private selected: Id | null = null;
   private drag: Drag | null = null;
   private editing = false; // a project batch (one undo step) is open for the current drag
@@ -116,7 +117,18 @@ export class Timeline {
     return (x - HEADER_W) / this.pps + this.scrollX;
   }
   private trackIndexAt(y: number): number {
-    return Math.floor((y - RULER_H) / TRACK_H);
+    return Math.floor((y - RULER_H + this.scrollY) / TRACK_H);
+  }
+  /** Top edge (canvas y) of a track row, after vertical scrolling. */
+  private trackY(trackIndex: number): number {
+    return RULER_H + trackIndex * TRACK_H - this.scrollY;
+  }
+  private maxScrollY(): number {
+    const content = this.project.getTracks().length * TRACK_H;
+    return Math.max(0, content - (this.h - RULER_H));
+  }
+  private clampScrollY(): void {
+    this.scrollY = Math.min(this.maxScrollY(), Math.max(0, this.scrollY));
   }
   private pos(clientX: number, clientY: number) {
     const r = this.canvas.getBoundingClientRect();
@@ -125,7 +137,7 @@ export class Timeline {
   private clipRect(trackIndex: number, c: Clip) {
     return {
       x: this.timeToX(c.start),
-      y: RULER_H + trackIndex * TRACK_H + 4,
+      y: this.trackY(trackIndex) + 4,
       w: c.duration * this.pps,
       h: TRACK_H - 8,
     };
@@ -173,10 +185,11 @@ export class Timeline {
     }
 
     if (x < HEADER_W) {
+      if (y < RULER_H) return;
       const ti = this.trackIndexAt(y);
       const track = this.project.getTracks()[ti];
       const bx = HEADER_W - 30;
-      const by = RULER_H + ti * TRACK_H + 10;
+      const by = this.trackY(ti) + 10;
       if (track && x >= bx && x <= bx + 22 && y >= by && y <= by + 20) {
         this.project.setMuted(track.id, !track.muted);
       } else if (track && this.inChannelButton(x, y, ti)) {
@@ -214,7 +227,7 @@ export class Timeline {
 
   /** The Mono/Stereo toggle in the bottom-left of a track header. */
   private inChannelButton(x: number, y: number, ti: number): boolean {
-    const by = RULER_H + ti * TRACK_H + TRACK_H - 28;
+    const by = this.trackY(ti) + TRACK_H - 28;
     return x >= 10 && x <= 10 + CH_BTN_W && y >= by && y <= by + 18;
   }
 
@@ -256,9 +269,13 @@ export class Timeline {
     if (e.ctrlKey || e.metaKey) {
       const { x } = this.pos(e.clientX, e.clientY);
       this.zoomAt(x, e.deltaY < 0 ? 1.15 : 1 / 1.15);
-    } else {
-      const delta = e.shiftKey || !e.deltaX ? e.deltaY : e.deltaX;
+    } else if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      // Shift+wheel (or a sideways trackpad swipe) scrolls along the timeline.
+      const delta = e.deltaX || e.deltaY;
       this.scrollX = Math.max(0, this.scrollX + delta / this.pps);
+    } else {
+      this.scrollY += e.deltaY;
+      this.clampScrollY();
     }
     this.dirty = true;
   }
@@ -279,6 +296,7 @@ export class Timeline {
     this.canvas.height = Math.floor(this.h * this.dpr);
     this.canvas.style.width = `${this.w}px`;
     this.canvas.style.height = `${this.h}px`;
+    this.clampScrollY();
     this.dirty = true;
   }
 
@@ -290,11 +308,12 @@ export class Timeline {
     g.fillStyle = C.bg;
     g.fillRect(0, 0, w, h);
 
+    this.clampScrollY(); // tracks may have been removed (undo) since the last draw
     const tracks = this.project.getTracks();
 
     // lanes
     tracks.forEach((_, i) => {
-      const y = RULER_H + i * TRACK_H;
+      const y = this.trackY(i);
       g.fillStyle = i % 2 ? C.laneAlt : C.lane;
       g.fillRect(HEADER_W, y, w - HEADER_W, TRACK_H);
       g.fillStyle = C.border;
@@ -319,6 +338,7 @@ export class Timeline {
 
     this.drawHeaders();
     this.drawRuler();
+    this.drawScrollbar();
 
     // playhead
     const px = this.timeToX(playhead);
@@ -332,6 +352,17 @@ export class Timeline {
       g.closePath();
       g.fill();
     }
+  }
+
+  /** Thin vertical scroll indicator, only when the tracks don't all fit. */
+  private drawScrollbar(): void {
+    const max = this.maxScrollY();
+    if (max <= 0) return;
+    const view = this.h - RULER_H;
+    const thumbH = Math.max(20, (view * view) / (view + max));
+    const thumbY = RULER_H + (this.scrollY / max) * (view - thumbH);
+    this.g.fillStyle = '#424242';
+    this.g.fillRect(this.w - 6, thumbY, 4, thumbH);
   }
 
   private drawRuler(): void {
@@ -362,7 +393,7 @@ export class Timeline {
   private drawHeaders(): void {
     const g = this.g;
     this.project.getTracks().forEach((t, i) => {
-      const y = RULER_H + i * TRACK_H;
+      const y = this.trackY(i);
       g.fillStyle = C.panel;
       g.fillRect(0, y, HEADER_W, TRACK_H);
       g.fillStyle = C.border;
