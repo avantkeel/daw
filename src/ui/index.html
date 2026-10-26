@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'"
+    />
     <title>DAW</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
@@ -14,7 +17,15 @@
         <button id="btn-stop">Stop</button>
         <button id="btn-mixer" aria-pressed="false">Mixer</button>
         <label class="toolbar-control" for="tempo">BPM</label>
-        <input id="tempo" class="toolbar-input" type="number" min="20" max="666" step="0.1" value="120" />
+        <input
+          id="tempo"
+          class="toolbar-input"
+          type="number"
+          min="20"
+          max="666"
+          step="0.1"
+          value="120"
+        />
         <label class="toolbar-control" for="grid">Grid</label>
         <select id="grid" class="toolbar-select">
           <option value="0">Off</option>
@@ -31,7 +42,10 @@
       </header>
       <main id="stage" class="stage"><canvas id="timeline"></canvas></main>
       <section id="mixer" class="mixer" aria-label="Mixer" hidden></section>
-      <footer id="status" class="status">Drop audio files on the timeline. Space plays, Delete removes the selected clip, Ctrl+wheel zooms.</footer>
+      <footer id="status" class="status">
+        Drop audio files on the timeline. Space plays, Delete removes the
+        selected clip, Ctrl+wheel zooms.
+      </footer>
     </div>
     <script src="renderer.js"></script>
   </body>

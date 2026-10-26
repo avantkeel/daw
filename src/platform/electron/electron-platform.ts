@@ -1,9 +1,14 @@
-import type { OpenedProject, Platform, ProjectLocation, SaveProjectRequest } from '../platform';
-import type { DawBridge } from './bridge';
+import type {
+  OpenedProject,
+  Platform,
+  ProjectLocation,
+  SaveProjectRequest,
+} from "../platform";
+import type { DawBridge } from "./bridge";
 
 /** Renderer-side adapter: Platform interface -> Electron preload bridge. */
 export class ElectronPlatform implements Platform {
-  readonly name = 'electron';
+  readonly name = "electron";
 
   constructor(private bridge: DawBridge) {}
 
@@ -23,7 +28,11 @@ export class ElectronPlatform implements Platform {
     return this.bridge.readFile(path);
   }
 
-  copyFileIntoProject(project: ProjectLocation, subfolder: string, sourcePath: string): Promise<string> {
+  copyFileIntoProject(
+    project: ProjectLocation,
+    subfolder: string,
+    sourcePath: string,
+  ): Promise<string> {
     return this.bridge.copyFileIntoProject(project, subfolder, sourcePath);
   }
 

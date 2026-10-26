@@ -1,4 +1,8 @@
-import type { OpenedProject, ProjectLocation, SaveProjectRequest } from '../platform';
+import type {
+  OpenedProject,
+  ProjectLocation,
+  SaveProjectRequest,
+} from "../platform";
 
 /** Shape of what preload.ts exposes on `window`. */
 export interface DawBridge {
@@ -6,7 +10,11 @@ export interface DawBridge {
   saveProject(request: SaveProjectRequest): Promise<ProjectLocation | null>;
   openProject(fileExtension: string): Promise<OpenedProject | null>;
   readFile(path: string): Promise<ArrayBuffer>;
-  copyFileIntoProject(project: ProjectLocation, subfolder: string, sourcePath: string): Promise<string>;
+  copyFileIntoProject(
+    project: ProjectLocation,
+    subfolder: string,
+    sourcePath: string,
+  ): Promise<string>;
   getFilePath(file: File): string;
   setDirty(dirty: boolean): void;
   onCloseRequested(handler: () => void): void;

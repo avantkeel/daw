@@ -1,11 +1,20 @@
-import { Emitter } from './emitter';
-import { trackChannelsFor, type AssetRef, type ChannelCount, type Clip, type Id, type Track, type TrackData } from './types';
+import { Emitter } from "./emitter";
+import {
+  trackChannelsFor,
+  type AssetRef,
+  type ChannelCount,
+  type Clip,
+  type Id,
+  type Track,
+  type TrackData,
+} from "./types";
 
 const MIN_CLIP = 0.01;
 /** Clips that only touch end to start are not overlapping. */
 const EPS = 1e-6;
 const MAX_HISTORY = 100;
-const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+const clamp = (v: number, lo: number, hi: number) =>
+  Math.min(hi, Math.max(lo, v));
 
 let seq = 0;
 const uid = (prefix: string): Id => `${prefix}_${++seq}`;
@@ -33,7 +42,7 @@ export class Project {
   private undoStack: string[] = [];
   private redoStack: string[] = [];
   private batching = 0;
-  private batchBefore = '';
+  private batchBefore = "";
 
   getTracks(): readonly Track[] {
     return this.tracks;
@@ -55,15 +64,16 @@ export class Project {
   /** Replaces the whole project (used when opening a file). Ids are generated here. Clears undo history. */
   load(tracks: TrackData[], assets: AssetRef[], tempo = 120): void {
     this.assets = new Map(assets.map((a) => [a.id, a]));
-    this.tempo = Number.isFinite(tempo) && tempo >= 20 && tempo <= 666 ? tempo : 120;
+    this.tempo =
+      Number.isFinite(tempo) && tempo >= 20 && tempo <= 666 ? tempo : 120;
     this.tracks = tracks.map((t) => ({
-      id: uid('track'),
+      id: uid("track"),
       name: t.name,
       channels: t.channels,
       volume: t.volume,
       muted: t.muted,
       solo: t.solo,
-      clips: t.clips.map((c) => ({ ...c, id: uid('clip') })),
+      clips: t.clips.map((c) => ({ ...c, id: uid("clip") })),
     }));
     this.undoStack = [];
     this.redoStack = [];
@@ -171,7 +181,8 @@ export class Project {
 
   duration(): number {
     let d = 0;
-    for (const t of this.tracks) for (const c of t.clips) d = Math.max(d, c.start + c.duration);
+    for (const t of this.tracks)
+      for (const c of t.clips) d = Math.max(d, c.start + c.duration);
     return d;
   }
 
@@ -187,28 +198,58 @@ export class Project {
   accepts(trackId: Id, assetId: Id): boolean {
     const track = this.tracks.find((t) => t.id === trackId);
     const asset = this.assets.get(assetId);
-    return !!track && !!asset && track.channels === trackChannelsFor(asset.channels);
+    return (
+      !!track && !!asset && track.channels === trackChannelsFor(asset.channels)
+    );
   }
 
   /** Clips on a track that overlap the time range [start, start + duration). `exceptId` is left out. */
-  clipsInRange(trackId: Id, start: number, duration: number, exceptId?: Id): Clip[] {
+  clipsInRange(
+    trackId: Id,
+    start: number,
+    duration: number,
+    exceptId?: Id,
+  ): Clip[] {
     const track = this.tracks.find((t) => t.id === trackId);
     if (!track) return [];
     const end = start + duration;
-    return track.clips.filter((c) => c.id !== exceptId && c.start < end - EPS && start < c.start + c.duration - EPS);
+    return track.clips.filter(
+      (c) =>
+        c.id !== exceptId &&
+        c.start < end - EPS &&
+        start < c.start + c.duration - EPS,
+    );
   }
 
   /** The other clips on the same track that this clip overlaps. */
   overlapping(clipId: Id): Clip[] {
     const found = this.findClip(clipId);
-    return found ? this.clipsInRange(found.track.id, found.clip.start, found.clip.duration, clipId) : [];
+    return found
+      ? this.clipsInRange(
+          found.track.id,
+          found.clip.start,
+          found.clip.duration,
+          clipId,
+        )
+      : [];
   }
 
   // ---------- edits ----------
 
-  addTrack(name = `Track ${this.tracks.length + 1}`, channels: ChannelCount = 2): Track {
+  addTrack(
+    name = `Track ${this.tracks.length + 1}`,
+    channels: ChannelCount = 2,
+  ): Track {
     return this.change(() => {
-      const track: Track = { id: uid('track'), name, channels, volume: 1, muted: false, solo: false, clips: [] };
+      const track: Track = {
+        id: uid("track"),
+        name,
+        channels,
+        volume: 1,
+        muted: false,
+        solo: false,
+        clips: [],
+      };
       this.tracks.push(track);
       return track;
     });
@@ -278,7 +319,7 @@ export class Project {
     if (!track) return undefined;
     return this.change(() => {
       const clip: Clip = {
-        id: uid('clip'),
+        id: uid("clip"),
         assetId: init.assetId,
         name: init.name,
         start: Math.max(0, init.start),
@@ -339,7 +380,11 @@ export class Project {
     if (!found) return;
     this.change(() => {
       const c = found.clip;
-      c.duration = clamp(newEnd - c.start, MIN_CLIP, c.sourceDuration - c.offset);
+      c.duration = clamp(
+        newEnd - c.start,
+        MIN_CLIP,
+        c.sourceDuration - c.offset,
+      );
       this.fitFades(c);
     });
   }

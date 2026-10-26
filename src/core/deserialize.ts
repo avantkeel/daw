@@ -1,5 +1,5 @@
-import { trackChannelsFor, type ChannelCount } from './types';
-import { parseXml, type XmlElement } from './xml';
+import { trackChannelsFor, type ChannelCount } from "./types";
+import { parseXml, type XmlElement } from "./xml";
 
 /** What a project file says about a source audio file. */
 export interface ParsedSource {
@@ -35,7 +35,8 @@ export interface ParsedProject {
   tempo: number;
 }
 
-const child = (el: XmlElement | undefined, tag: string) => el?.children.find((c) => c.tag === tag);
+const child = (el: XmlElement | undefined, tag: string) =>
+  el?.children.find((c) => c.tag === tag);
 
 const num = (v: string | undefined, fallback: number): number => {
   if (v === undefined) return fallback;
@@ -48,29 +49,40 @@ const baseName = (p: string) => p.split(/[\\/]/).pop() ?? p;
 /** Reads the format written by serialize.ts. Throws if the file isn't a project. */
 export function parseProject(xml: string): ParsedProject {
   const root = parseXml(xml);
-  if (root.tag !== 'Project') throw new Error('Not a valid project file');
-  const tempo = Math.min(666, Math.max(20, num(child(child(root, 'Transport'), 'Tempo')?.attrs.value, 120)));
+  if (root.tag !== "Project") throw new Error("Not a valid project file");
+  const tempo = Math.min(
+    666,
+    Math.max(
+      20,
+      num(child(child(root, "Transport"), "Tempo")?.attrs.value, 120),
+    ),
+  );
 
-  const trackEls = (child(root, 'Structure')?.children ?? []).filter(
-    (t) => t.tag === 'Track' && child(t, 'Channel')?.attrs.role !== 'master',
+  const trackEls = (child(root, "Structure")?.children ?? []).filter(
+    (t) => t.tag === "Track" && child(t, "Channel")?.attrs.role !== "master",
   );
 
   const lanesByTrack = new Map<string, XmlElement>();
-  for (const lane of child(child(root, 'Arrangement'), 'Lanes')?.children ?? []) {
-    if (lane.tag === 'Lanes' && lane.attrs.track) lanesByTrack.set(lane.attrs.track, lane);
+  for (const lane of child(child(root, "Arrangement"), "Lanes")?.children ??
+    []) {
+    if (lane.tag === "Lanes" && lane.attrs.track)
+      lanesByTrack.set(lane.attrs.track, lane);
   }
 
   const tracks = trackEls.map((t): ParsedTrack => {
-    const channel = child(t, 'Channel');
-    const clipEls = child(lanesByTrack.get(t.attrs.id ?? ''), 'Clips')?.children ?? [];
+    const channel = child(t, "Channel");
+    const clipEls =
+      child(lanesByTrack.get(t.attrs.id ?? ""), "Clips")?.children ?? [];
     return {
-      name: t.attrs.name ?? 'Track',
+      name: t.attrs.name ?? "Track",
       // Files written before tracks had a channel count always said 2.
       channels: trackChannelsFor(num(channel?.attrs.audioChannels, 2)),
-      volume: num(child(channel, 'Volume')?.attrs.value, 1),
-      muted: child(channel, 'Mute')?.attrs.value === 'true',
-      solo: channel?.attrs.solo === 'true',
-      clips: clipEls.filter((c) => c.tag === 'Clip').flatMap((c) => parseClip(c) ?? []),
+      volume: num(child(channel, "Volume")?.attrs.value, 1),
+      muted: child(channel, "Mute")?.attrs.value === "true",
+      solo: channel?.attrs.solo === "true",
+      clips: clipEls
+        .filter((c) => c.tag === "Clip")
+        .flatMap((c) => parseClip(c) ?? []),
     };
   });
 
@@ -78,15 +90,15 @@ export function parseProject(xml: string): ParsedProject {
 }
 
 function parseClip(el: XmlElement): ParsedClip | null {
-  const audio = child(el, 'Audio');
-  const file = child(audio, 'File');
+  const audio = child(el, "Audio");
+  const file = child(audio, "File");
   if (!audio || !file) return null;
 
-  const rawPath = file.attrs.path ?? '';
+  const rawPath = file.attrs.path ?? "";
   const duration = num(el.attrs.duration, 0);
   if (duration <= 0) return null;
   const offset = Math.max(0, num(el.attrs.playStart, 0));
-  const fileName = baseName(rawPath) || el.attrs.name || 'audio';
+  const fileName = baseName(rawPath) || el.attrs.name || "audio";
 
   return {
     source: {

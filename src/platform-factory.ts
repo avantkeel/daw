@@ -1,6 +1,6 @@
-import type { Platform } from './platform/platform';
-import { ElectronPlatform } from './platform/electron/electron-platform';
-import { WebPlatform } from './platform/web/web-platform';
+import type { Platform } from "./platform/platform";
+import { ElectronPlatform } from "./platform/electron/electron-platform";
+import { WebPlatform } from "./platform/web/web-platform";
 
 /**
  * The ONLY file that knows which hosts exist.

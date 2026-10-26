@@ -1,7 +1,7 @@
-import type { Project } from '../core/project';
-import type { Id } from '../core/types';
-import { AssetStore } from './assets';
-import { scheduleProject, type ScheduledPlayback } from './scheduler';
+import type { Project } from "../core/project";
+import type { Id } from "../core/types";
+import { AssetStore } from "./assets";
+import { scheduleProject, type ScheduledPlayback } from "./scheduler";
 
 export class AudioEngine {
   readonly ctx = new AudioContext();

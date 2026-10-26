@@ -1,26 +1,29 @@
-import { AudioEngine } from './audio/engine';
-import { renderToWav } from './audio/exporter';
-import { Project } from './core/project';
-import { stripAudioExtension } from './core/names';
-import { defaultTemplate, trackChannelsFor } from './core/types';
-import { byId } from './ui/dom';
-import { askReplaceClips } from './ui/dialog';
-import { attachFileDrop } from './ui/dropzone';
-import { Timeline } from './ui/timeline';
-import { MenuBar } from './ui/menubar';
-import { showContextMenu } from './ui/contextmenu';
-import { Toolbar } from './ui/toolbar';
-import { Mixer } from './ui/mixer';
-import { createPlatform } from './platform-factory';
-import { ProjectFiles } from './project-files';
+import { AudioEngine } from "./audio/engine";
+import { renderToWav } from "./audio/exporter";
+import { Project } from "./core/project";
+import { stripAudioExtension } from "./core/names";
+import { defaultTemplate, trackChannelsFor } from "./core/types";
+import { byId } from "./ui/dom";
+import { askReplaceClips } from "./ui/dialog";
+import { attachFileDrop } from "./ui/dropzone";
+import { Timeline } from "./ui/timeline";
+import { MenuBar } from "./ui/menubar";
+import { showContextMenu } from "./ui/contextmenu";
+import { Toolbar } from "./ui/toolbar";
+import { Mixer } from "./ui/mixer";
+import { createPlatform } from "./platform-factory";
+import { ProjectFiles } from "./project-files";
 
 export function bootstrap(): void {
   const project = new Project();
   const engine = new AudioEngine(project);
   const platform = createPlatform();
-  const mixer = new Mixer(byId('mixer'), project, () => engine.getTrackLevels());
+  const mixer = new Mixer(byId("mixer"), project, () =>
+    engine.getTrackLevels(),
+  );
 
-  const togglePlay = () => (engine.playing ? engine.pause() : void engine.play());
+  const togglePlay = () =>
+    engine.playing ? engine.pause() : void engine.play();
 
   const toolbar = new Toolbar({
     onPlayPause: togglePlay,
@@ -30,21 +33,25 @@ export function bootstrap(): void {
     onZoomOut: () => timeline.zoomBy(1 / 1.4),
     onTempoChange: (tempo) => {
       if (!project.setTempo(tempo)) {
-        toolbar.setStatus('BPM must be between 20 and 666');
+        toolbar.setStatus("BPM must be between 20 and 666");
         toolbar.setTempo(project.getTempo());
       }
     },
     onGridChange: (beats) => timeline.setGridBeats(beats),
     onExport: async () => {
       if (project.duration() === 0) {
-        toolbar.setStatus('Nothing to export yet. Drop some audio first.');
+        toolbar.setStatus("Nothing to export yet. Drop some audio first.");
         return;
       }
-      toolbar.setStatus('Rendering…');
+      toolbar.setStatus("Rendering…");
       try {
-        const wav = await renderToWav(project, engine.assets, engine.sampleRate);
-        const saved = await platform.saveFile('mixdown.wav', wav);
-        toolbar.setStatus(saved ? 'Exported mixdown.wav' : 'Export cancelled');
+        const wav = await renderToWav(
+          project,
+          engine.assets,
+          engine.sampleRate,
+        );
+        const saved = await platform.saveFile("mixdown.wav", wav);
+        toolbar.setStatus(saved ? "Exported mixdown.wav" : "Export cancelled");
       } catch (err) {
         toolbar.setStatus(`Export failed: ${(err as Error).message}`);
       }
@@ -52,7 +59,7 @@ export function bootstrap(): void {
   });
 
   const timeline = new Timeline(
-    byId<HTMLCanvasElement>('timeline'),
+    byId<HTMLCanvasElement>("timeline"),
     project,
     engine.assets,
     () => engine.position,
@@ -69,15 +76,20 @@ export function bootstrap(): void {
     engine,
     platform,
     (msg) => toolbar.setStatus(msg),
-    (name, dirty) => (document.title = `${dirty ? '* ' : ''}${name ? `${name} - DAW` : 'DAW'}`),
+    (name, dirty) =>
+      (document.title = `${dirty ? "* " : ""}${name ? `${name} - DAW` : "DAW"}`),
   );
   platform.onCloseRequested(() => void files.exit());
-  const mod = /Mac/.test(navigator.platform) ? '⌘' : 'Ctrl+';
-  const undo = () => toolbar.setStatus(project.undo() ? 'Undo' : 'Nothing to undo');
-  const redo = () => toolbar.setStatus(project.redo() ? 'Redo' : 'Nothing to redo');
+  const mod = /Mac/.test(navigator.platform) ? "⌘" : "Ctrl+";
+  const undo = () =>
+    toolbar.setStatus(project.undo() ? "Undo" : "Nothing to undo");
+  const redo = () =>
+    toolbar.setStatus(project.redo() ? "Redo" : "Nothing to redo");
   const newTrack = (channels: 1 | 2) => {
     const track = project.addTrack(undefined, channels);
-    toolbar.setStatus(`Added ${track.name} (${channels === 1 ? 'mono' : 'stereo'})`);
+    toolbar.setStatus(
+      `Added ${track.name} (${channels === 1 ? "mono" : "stereo"})`,
+    );
   };
   const deleteClip = (clipId: string) => {
     const clip = project.findClip(clipId)?.clip;
@@ -91,58 +103,87 @@ export function bootstrap(): void {
     project.removeTrack(trackId);
     toolbar.setStatus(`Deleted ${track.name} (Edit > Undo brings it back)`);
   };
-  new MenuBar(byId('menubar'), [
+  new MenuBar(byId("menubar"), [
     {
-      label: 'File',
+      label: "File",
       items: [
-        { label: 'New Project', shortcut: `${mod}N`, onSelect: () => void files.newProject() },
-        { label: 'Open…', shortcut: `${mod}O`, onSelect: () => void files.open() },
-        { label: 'Save', shortcut: `${mod}S`, onSelect: () => void files.save() },
-        { label: 'Save As…', shortcut: `${mod}Shift+S`, onSelect: () => void files.save(true) },
+        {
+          label: "New Project",
+          shortcut: `${mod}N`,
+          onSelect: () => void files.newProject(),
+        },
+        {
+          label: "Open…",
+          shortcut: `${mod}O`,
+          onSelect: () => void files.open(),
+        },
+        {
+          label: "Save",
+          shortcut: `${mod}S`,
+          onSelect: () => void files.save(),
+        },
+        {
+          label: "Save As…",
+          shortcut: `${mod}Shift+S`,
+          onSelect: () => void files.save(true),
+        },
         { separator: true },
-        { label: 'Copy Audio to Project Folder', onSelect: () => void files.copyAudioToProject() },
+        {
+          label: "Copy Audio to Project Folder",
+          onSelect: () => void files.copyAudioToProject(),
+        },
         { separator: true },
-        { label: 'Exit', shortcut: `${mod}Q`, onSelect: () => void files.exit() },
+        {
+          label: "Exit",
+          shortcut: `${mod}Q`,
+          onSelect: () => void files.exit(),
+        },
       ],
     },
     {
-      label: 'Edit',
+      label: "Edit",
       items: [
-        { label: 'Undo', shortcut: `${mod}Z`, onSelect: undo },
-        { label: 'Redo', shortcut: `${mod}Y`, onSelect: redo },
+        { label: "Undo", shortcut: `${mod}Z`, onSelect: undo },
+        { label: "Redo", shortcut: `${mod}Y`, onSelect: redo },
       ],
     },
     {
-      label: 'Track',
+      label: "Track",
       items: [
-        { label: 'New Mono Track', onSelect: () => newTrack(1) },
-        { label: 'New Stereo Track', onSelect: () => newTrack(2) },
+        { label: "New Mono Track", onSelect: () => newTrack(1) },
+        { label: "New Stereo Track", onSelect: () => newTrack(2) },
       ],
     },
   ]);
 
-  const stage = byId('stage');
+  const stage = byId("stage");
 
   // Right-click in the track area: add a mono or stereo track (and rename the track under the cursor).
-  stage.addEventListener('contextmenu', (e) => {
+  stage.addEventListener("contextmenu", (e) => {
     e.preventDefault();
     if (!timeline.inTrackArea(e.clientX, e.clientY)) return;
     const items = [
-      { label: 'New Mono Track', onSelect: () => newTrack(1) },
-      { label: 'New Stereo Track', onSelect: () => newTrack(2) },
+      { label: "New Mono Track", onSelect: () => newTrack(1) },
+      { label: "New Stereo Track", onSelect: () => newTrack(2) },
     ];
     const clipId = timeline.clipAt(e.clientX, e.clientY);
     const trackId = timeline.locate(e.clientX, e.clientY).trackId;
     if (clipId) {
       // Right-click on a clip: rename that clip (the audio file it points to is not touched).
       items.unshift(
-        { label: 'Rename Clip', onSelect: () => timeline.beginRenameClip(clipId) },
-        { label: 'Delete Clip', onSelect: () => deleteClip(clipId) },
+        {
+          label: "Rename Clip",
+          onSelect: () => timeline.beginRenameClip(clipId),
+        },
+        { label: "Delete Clip", onSelect: () => deleteClip(clipId) },
       );
     } else if (trackId) {
       items.unshift(
-        { label: 'Rename Track', onSelect: () => timeline.beginRenameTrack(trackId) },
-        { label: 'Delete Track', onSelect: () => deleteTrack(trackId) },
+        {
+          label: "Rename Track",
+          onSelect: () => timeline.beginRenameTrack(trackId),
+        },
+        { label: "Delete Track", onSelect: () => deleteTrack(trackId) },
       );
     }
     showContextMenu(e.clientX, e.clientY, items);
@@ -165,16 +206,28 @@ export function bootstrap(): void {
         // Dropped on a lane: use that track if its channel layout matches the file,
         // otherwise (or when dropped elsewhere) make a new mono/stereo track to match.
         const channels = trackChannelsFor(asset.channels);
-        const target = first && where.trackId ? project.getTracks().find((t) => t.id === where.trackId) : undefined;
+        const target =
+          first && where.trackId
+            ? project.getTracks().find((t) => t.id === where.trackId)
+            : undefined;
         // The track the file goes on, if it can go on the one it was dropped on; otherwise a new one is made.
-        const lane = target && target.channels === channels ? target : undefined;
+        const lane =
+          target && target.channels === channels ? target : undefined;
         const start = target ? where.time : 0;
         // Clips on a track may not overlap: ask before deleting the ones in the way.
-        const hits = lane ? project.clipsInRange(lane.id, start, asset.duration) : [];
+        const hits = lane
+          ? project.clipsInRange(lane.id, start, asset.duration)
+          : [];
         if (hits.length > 0) {
-          const ok = await askReplaceClips(clipName, hits.map((h) => h.name), 'does not add the file.');
+          const ok = await askReplaceClips(
+            clipName,
+            hits.map((h) => h.name),
+            "does not add the file.",
+          );
           if (!ok) {
-            toolbar.setStatus(`Not added ${clipName}: it would overlap another clip`);
+            toolbar.setStatus(
+              `Not added ${clipName}: it would overlap another clip`,
+            );
             first = false;
             continue;
           }
@@ -182,7 +235,9 @@ export function bootstrap(): void {
         // One undo step for the deleted clips, the new track (if any) and the new clip.
         project.batch(() => {
           for (const h of hits) project.removeClip(h.id);
-          const trackId = lane ? lane.id : project.addTrack(clipName, channels).id;
+          const trackId = lane
+            ? lane.id
+            : project.addTrack(clipName, channels).id;
           project.addClip(trackId, {
             assetId: asset.assetId,
             name: clipName,
@@ -190,7 +245,9 @@ export function bootstrap(): void {
             start,
           });
         });
-        toolbar.setStatus(`Added ${clipName} (${channels === 1 ? 'mono' : 'stereo'})`);
+        toolbar.setStatus(
+          `Added ${clipName} (${channels === 1 ? "mono" : "stereo"})`,
+        );
       } catch {
         toolbar.setStatus(`Could not decode ${file.name}`);
       }
@@ -198,20 +255,20 @@ export function bootstrap(): void {
     }
   });
 
-  window.addEventListener('keydown', (e) => {
+  window.addEventListener("keydown", (e) => {
     if (e.ctrlKey || e.metaKey) {
       const key = e.key.toLowerCase();
-      if (key === 'n') void files.newProject();
-      else if (key === 'o') void files.open();
-      else if (key === 's') void files.save(e.shiftKey);
-      else if (key === 'q') void files.exit();
-      else if (key === 'z' && !e.shiftKey) undo();
-      else if (key === 'y') redo();
+      if (key === "n") void files.newProject();
+      else if (key === "o") void files.open();
+      else if (key === "s") void files.save(e.shiftKey);
+      else if (key === "q") void files.exit();
+      else if (key === "z" && !e.shiftKey) undo();
+      else if (key === "y") redo();
       else return;
       e.preventDefault();
       return;
     }
-    if (e.code === 'Space') {
+    if (e.code === "Space") {
       e.preventDefault();
       togglePlay();
     }

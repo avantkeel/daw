@@ -9,6 +9,7 @@ Drag audio in, move / trim / fade clips, play, export WAV. No MIDI, no plugins.
     pnpm typecheck
 
 ## Controls
+
 - Drop audio files on the timeline. Mono files make mono tracks, stereo files make stereo tracks.
   Dropped on a lane with the same layout = that track at that time; on a lane with a different layout or elsewhere = new track
 - Stereo audio shows two waveforms (left on top, right below); mono shows one

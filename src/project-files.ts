@@ -1,17 +1,22 @@
-import type { AudioEngine } from './audio/engine';
-import { parseProject, type ParsedSource } from './core/deserialize';
-import { stripAudioExtension } from './core/names';
-import { relativeToFolder, resolveInFolder } from './core/paths';
-import type { Project } from './core/project';
-import { PROJECT_EXTENSION, serializeProject } from './core/serialize';
-import { defaultTemplate, type AssetRef, type ClipData, type TrackData } from './core/types';
-import type { Platform, ProjectLocation } from './platform/platform';
-import { askUnsavedChanges } from './ui/dialog';
+import type { AudioEngine } from "./audio/engine";
+import { parseProject, type ParsedSource } from "./core/deserialize";
+import { stripAudioExtension } from "./core/names";
+import { relativeToFolder, resolveInFolder } from "./core/paths";
+import type { Project } from "./core/project";
+import { PROJECT_EXTENSION, serializeProject } from "./core/serialize";
+import {
+  defaultTemplate,
+  type AssetRef,
+  type ClipData,
+  type TrackData,
+} from "./core/types";
+import type { Platform, ProjectLocation } from "./platform/platform";
+import { askUnsavedChanges } from "./ui/dialog";
 
-const APP_NAME = 'DAW';
-const APP_VERSION = '0.1.0';
+const APP_NAME = "DAW";
+const APP_VERSION = "0.1.0";
 /** Folder inside the project folder that holds copied audio. */
-const AUDIO_FOLDER = 'Audio';
+const AUDIO_FOLDER = "Audio";
 
 interface LoadedAsset {
   ref: AssetRef;
@@ -57,9 +62,9 @@ export class ProjectFiles {
    */
   private async confirmDiscard(): Promise<boolean> {
     if (!this.dirty) return true;
-    const choice = await askUnsavedChanges(this.current?.name ?? 'Untitled');
-    if (choice === 'cancel') return false;
-    if (choice === 'save') {
+    const choice = await askUnsavedChanges(this.current?.name ?? "Untitled");
+    if (choice === "cancel") return false;
+    if (choice === "save") {
       await this.save();
       return !this.dirty; // still dirty = save was cancelled or failed
     }
@@ -76,7 +81,7 @@ export class ProjectFiles {
   /** Discards the current project and starts an empty one. */
   async newProject(): Promise<void> {
     if (!(await this.confirmDiscard())) {
-      this.onStatus('New project cancelled');
+      this.onStatus("New project cancelled");
       return;
     }
     this.engine.stop();
@@ -85,13 +90,13 @@ export class ProjectFiles {
     this.current = null;
     this.setDirty(false);
     this.updateTitle();
-    this.onStatus('New project');
+    this.onStatus("New project");
   }
 
   async save(saveAs = false): Promise<void> {
     try {
       const saved = await this.platform.saveProject({
-        suggestedName: this.current?.name ?? 'Untitled',
+        suggestedName: this.current?.name ?? "Untitled",
         fileExtension: PROJECT_EXTENSION,
         // Save As may move the project, so only a plain Save can safely write paths relative to the folder.
         content: serializeProject(this.project, {
@@ -102,7 +107,7 @@ export class ProjectFiles {
         existing: saveAs ? undefined : (this.current ?? undefined),
       });
       if (!saved) {
-        this.onStatus('Save cancelled');
+        this.onStatus("Save cancelled");
         return;
       }
       this.current = saved;
@@ -121,15 +126,22 @@ export class ProjectFiles {
   async copyAudioToProject(): Promise<void> {
     const folder = this.current;
     if (!folder) {
-      this.onStatus('Save the project first, then copy its audio into the project folder.');
+      this.onStatus(
+        "Save the project first, then copy its audio into the project folder.",
+      );
       return;
     }
     let copied = 0;
     let failed = 0;
     for (const asset of this.project.getAssets()) {
-      if (!asset.path || relativeToFolder(asset.path, folder.location)) continue; // unknown location, or already inside
+      if (!asset.path || relativeToFolder(asset.path, folder.location))
+        continue; // unknown location, or already inside
       try {
-        const dest = await this.platform.copyFileIntoProject(folder, AUDIO_FOLDER, asset.path);
+        const dest = await this.platform.copyFileIntoProject(
+          folder,
+          AUDIO_FOLDER,
+          asset.path,
+        );
         this.project.setAssetPath(asset.id, dest);
         copied++;
       } catch {
@@ -137,21 +149,26 @@ export class ProjectFiles {
       }
     }
     if (copied > 0) await this.save();
-    const parts = [copied > 0 ? `Copied ${copied} audio file(s) to ${AUDIO_FOLDER}/` : 'No audio files needed copying'];
-    if (failed > 0) parts.push(`${failed} could not be copied (missing or unreadable)`);
-    this.onStatus(`${parts.join('. ')}.`);
+    const parts = [
+      copied > 0
+        ? `Copied ${copied} audio file(s) to ${AUDIO_FOLDER}/`
+        : "No audio files needed copying",
+    ];
+    if (failed > 0)
+      parts.push(`${failed} could not be copied (missing or unreadable)`);
+    this.onStatus(`${parts.join(". ")}.`);
   }
 
   async open(): Promise<void> {
     try {
       const opened = await this.platform.openProject(PROJECT_EXTENSION);
       if (!opened) {
-        this.onStatus('Open cancelled');
+        this.onStatus("Open cancelled");
         return;
       }
       const parsed = parseProject(opened.content);
       if (!(await this.confirmDiscard())) {
-        this.onStatus('Open cancelled');
+        this.onStatus("Open cancelled");
         return;
       }
       this.onStatus(`Opening ${opened.location.name}…`);
@@ -173,7 +190,10 @@ export class ProjectFiles {
           }
           // The real file may differ from what was saved, so fit the clip to it.
           const sourceDuration = asset.ref.duration;
-          const duration = Math.max(0.01, Math.min(pc.duration, sourceDuration - pc.offset));
+          const duration = Math.max(
+            0.01,
+            Math.min(pc.duration, sourceDuration - pc.offset),
+          );
           const fadeIn = Math.min(pc.fadeIn, duration);
           clips.push({
             assetId: asset.ref.id,
@@ -186,11 +206,22 @@ export class ProjectFiles {
             fadeOut: Math.min(pc.fadeOut, duration - fadeIn),
           });
         }
-        tracks.push({ name: pt.name, channels: pt.channels, volume: pt.volume, muted: pt.muted, solo: pt.solo, clips });
+        tracks.push({
+          name: pt.name,
+          channels: pt.channels,
+          volume: pt.volume,
+          muted: pt.muted,
+          solo: pt.solo,
+          clips,
+        });
       }
 
       const all = [...assets.values()];
-      this.project.load(tracks, all.map((a) => a.ref), parsed.tempo);
+      this.project.load(
+        tracks,
+        all.map((a) => a.ref),
+        parsed.tempo,
+      );
       this.current = opened.location;
       this.setDirty(false);
       this.updateTitle();
@@ -207,9 +238,14 @@ export class ProjectFiles {
   }
 
   /** Loads the audio, or returns a silent placeholder so the clips (and their data) are kept. */
-  private async loadAsset(src: ParsedSource, projectFolder: string): Promise<LoadedAsset> {
+  private async loadAsset(
+    src: ParsedSource,
+    projectFolder: string,
+  ): Promise<LoadedAsset> {
     // Audio copied into the project folder is stored relative to it.
-    const path = src.path ? resolveInFolder(src.path, projectFolder) : undefined;
+    const path = src.path
+      ? resolveInFolder(src.path, projectFolder)
+      : undefined;
     if (path) {
       try {
         const data = await this.platform.readFile(path);

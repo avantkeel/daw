@@ -1,6 +1,6 @@
-import { fadeGainAt } from '../core/fades';
-import type { Id, Track } from '../core/types';
-import type { AssetStore } from './assets';
+import { fadeGainAt } from "../core/fades";
+import type { Id, Track } from "../core/types";
+import type { AssetStore } from "./assets";
 
 export interface ScheduledPlayback {
   stop(): void;
@@ -33,8 +33,8 @@ export function scheduleProject(
     // Fixes the track's channel layout: stereo clips on a mono track are downmixed,
     // mono clips on a stereo track are centred. Mono tracks reach the master as dual-mono.
     trackGain.channelCount = track.channels;
-    trackGain.channelCountMode = 'explicit';
-    trackGain.channelInterpretation = 'speakers';
+    trackGain.channelCountMode = "explicit";
+    trackGain.channelInterpretation = "speakers";
     const meter = trackMeters?.get(track.id);
     if (meter) {
       trackGain.connect(meter);
@@ -60,10 +60,12 @@ export function scheduleProject(
       const g = gain.gain;
 
       g.setValueAtTime(fadeGainAt(clip, skip), t0);
-      if (clip.fadeIn > skip) g.linearRampToValueAtTime(1, T(clip.start + clip.fadeIn));
+      if (clip.fadeIn > skip)
+        g.linearRampToValueAtTime(1, T(clip.start + clip.fadeIn));
       if (clip.fadeOut > 0) {
         const fadeOutStart = clip.duration - clip.fadeOut;
-        if (fadeOutStart > skip) g.setValueAtTime(1, T(clip.start + fadeOutStart));
+        if (fadeOutStart > skip)
+          g.setValueAtTime(1, T(clip.start + fadeOutStart));
         g.linearRampToValueAtTime(0, T(end));
       }
 

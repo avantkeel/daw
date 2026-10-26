@@ -106,7 +106,9 @@ export class Mixer {
 
   refresh(): void {
     const tracks = this.project.getTracks();
-    const order = tracks.map((track) => `${track.id}:${track.channels}`).join(",");
+    const order = tracks
+      .map((track) => `${track.id}:${track.channels}`)
+      .join(",");
     if (order !== this.trackOrder) this.buildStrips(order);
 
     for (const track of tracks) {

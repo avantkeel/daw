@@ -11,20 +11,24 @@ export function closeContextMenu(): void {
 }
 
 /** Small right-click menu at a screen position. Closes on pick, click elsewhere, Escape or scroll. */
-export function showContextMenu(clientX: number, clientY: number, items: ContextItem[]): void {
+export function showContextMenu(
+  clientX: number,
+  clientY: number,
+  items: ContextItem[],
+): void {
   closeContextMenu();
-  const list = document.createElement('div');
-  list.className = 'menu-list context-menu';
+  const list = document.createElement("div");
+  list.className = "menu-list context-menu";
   list.style.left = `${clientX}px`;
   list.style.top = `${clientY}px`;
 
   for (const item of items) {
-    const row = document.createElement('button');
-    row.className = 'menu-item';
-    const label = document.createElement('span');
+    const row = document.createElement("button");
+    row.className = "menu-item";
+    const label = document.createElement("span");
     label.textContent = item.label;
     row.append(label);
-    row.addEventListener('click', () => {
+    row.addEventListener("click", () => {
       closeContextMenu();
       item.onSelect();
     });
@@ -34,8 +38,10 @@ export function showContextMenu(clientX: number, clientY: number, items: Context
   document.body.append(list);
   // Keep the menu inside the window.
   const r = list.getBoundingClientRect();
-  if (r.right > window.innerWidth) list.style.left = `${Math.max(0, window.innerWidth - r.width - 4)}px`;
-  if (r.bottom > window.innerHeight) list.style.top = `${Math.max(0, window.innerHeight - r.height - 4)}px`;
+  if (r.right > window.innerWidth)
+    list.style.left = `${Math.max(0, window.innerWidth - r.width - 4)}px`;
+  if (r.bottom > window.innerHeight)
+    list.style.top = `${Math.max(0, window.innerHeight - r.height - 4)}px`;
   current = list;
 
   const close = (e: Event) => {
@@ -43,13 +49,13 @@ export function showContextMenu(clientX: number, clientY: number, items: Context
     closeContextMenu();
     cleanup();
   };
-  const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close(e);
+  const onKey = (e: KeyboardEvent) => e.key === "Escape" && close(e);
   const cleanup = () => {
-    document.removeEventListener('mousedown', close, true);
-    window.removeEventListener('keydown', onKey, true);
-    window.removeEventListener('wheel', close, true);
+    document.removeEventListener("mousedown", close, true);
+    window.removeEventListener("keydown", onKey, true);
+    window.removeEventListener("wheel", close, true);
   };
-  document.addEventListener('mousedown', close, true);
-  window.addEventListener('keydown', onKey, true);
-  window.addEventListener('wheel', close, true);
+  document.addEventListener("mousedown", close, true);
+  window.addEventListener("keydown", onKey, true);
+  window.addEventListener("wheel", close, true);
 }

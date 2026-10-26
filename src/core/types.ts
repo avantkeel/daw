@@ -4,7 +4,8 @@ export type Id = string;
 export type ChannelCount = 1 | 2;
 
 /** Mono sources give mono tracks; stereo and anything wider (5.1, ...) give stereo tracks. */
-export const trackChannelsFor = (sourceChannels: number): ChannelCount => (sourceChannels <= 1 ? 1 : 2);
+export const trackChannelsFor = (sourceChannels: number): ChannelCount =>
+  sourceChannels <= 1 ? 1 : 2;
 
 export interface Clip {
   id: Id;
@@ -44,7 +45,7 @@ export interface AssetRef {
 }
 
 /** A clip without its id, used when loading a project. */
-export type ClipData = Omit<Clip, 'id'>;
+export type ClipData = Omit<Clip, "id">;
 
 export interface TrackData {
   name: string;
@@ -57,8 +58,36 @@ export interface TrackData {
 
 /** The tracks a new project starts with: two stereo, two mono. */
 export const defaultTemplate = (): TrackData[] => [
-  { name: 'Stereo 1', channels: 2, volume: 1, muted: false, solo: false, clips: [] },
-  { name: 'Stereo 2', channels: 2, volume: 1, muted: false, solo: false, clips: [] },
-  { name: 'Mono 1', channels: 1, volume: 1, muted: false, solo: false, clips: [] },
-  { name: 'Mono 2', channels: 1, volume: 1, muted: false, solo: false, clips: [] },
+  {
+    name: "Stereo 1",
+    channels: 2,
+    volume: 1,
+    muted: false,
+    solo: false,
+    clips: [],
+  },
+  {
+    name: "Stereo 2",
+    channels: 2,
+    volume: 1,
+    muted: false,
+    solo: false,
+    clips: [],
+  },
+  {
+    name: "Mono 1",
+    channels: 1,
+    volume: 1,
+    muted: false,
+    solo: false,
+    clips: [],
+  },
+  {
+    name: "Mono 2",
+    channels: 1,
+    volume: 1,
+    muted: false,
+    solo: false,
+    clips: [],
+  },
 ];

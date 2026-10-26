@@ -6,7 +6,7 @@
   "private": true,
   "scripts": {
     "build": "node scripts/build.mjs",
-    "format": "prettier --write",
+    "format": "prettier --write .",
     "format:check": "prettier --check",
     "start": "pnpm build && electron .",
     "typecheck": "tsc --noEmit",

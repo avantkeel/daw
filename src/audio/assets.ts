@@ -1,5 +1,5 @@
-import type { Id } from '../core/types';
-import { computePeaks, type Peaks } from './peaks';
+import type { Id } from "../core/types";
+import { computePeaks, type Peaks } from "./peaks";
 
 interface Asset {
   buffer: AudioBuffer;
@@ -13,16 +13,36 @@ export class AssetStore {
 
   constructor(private ctx: BaseAudioContext) {}
 
-  async importFile(file: File): Promise<{ assetId: Id; name: string; duration: number; sampleRate: number; channels: number }> {
+  async importFile(
+    file: File,
+  ): Promise<{
+    assetId: Id;
+    name: string;
+    duration: number;
+    sampleRate: number;
+    channels: number;
+  }> {
     const asset = await this.importBuffer(await file.arrayBuffer());
     return { ...asset, name: file.name };
   }
 
-  async importBuffer(data: ArrayBuffer): Promise<{ assetId: Id; duration: number; sampleRate: number; channels: number }> {
+  async importBuffer(
+    data: ArrayBuffer,
+  ): Promise<{
+    assetId: Id;
+    duration: number;
+    sampleRate: number;
+    channels: number;
+  }> {
     const buffer = await this.ctx.decodeAudioData(data);
     const assetId = `asset_${++this.seq}`;
     this.items.set(assetId, { buffer, peaks: computePeaks(buffer) });
-    return { assetId, duration: buffer.duration, sampleRate: buffer.sampleRate, channels: buffer.numberOfChannels };
+    return {
+      assetId,
+      duration: buffer.duration,
+      sampleRate: buffer.sampleRate,
+      channels: buffer.numberOfChannels,
+    };
   }
 
   clear(): void {

@@ -40,7 +40,11 @@ export interface Platform {
    * Copies an audio file into `<project folder>/<subfolder>/` (never overwriting; a name clash gets a suffix).
    * Returns the absolute path of the copy.
    */
-  copyFileIntoProject(project: ProjectLocation, subfolder: string, sourcePath: string): Promise<string>;
+  copyFileIntoProject(
+    project: ProjectLocation,
+    subfolder: string,
+    sourcePath: string,
+  ): Promise<string>;
   /** Absolute path of a dropped file, or undefined if the host can't tell (e.g. browsers). */
   getFilePath(file: File): string | undefined;
   /**

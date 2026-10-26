@@ -5,9 +5,14 @@ export interface XmlElement {
 }
 
 const unescapeXml = (s: string) =>
-  s.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  s
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
 
-const TOKEN = /<\?[\s\S]*?\?>|<!--[\s\S]*?-->|<(\/?)([A-Za-z_][\w:.-]*)((?:\s+[\w:.-]+\s*=\s*"[^"]*")*)\s*(\/?)>/g;
+const TOKEN =
+  /<\?[\s\S]*?\?>|<!--[\s\S]*?-->|<(\/?)([A-Za-z_][\w:.-]*)((?:\s+[\w:.-]+\s*=\s*"[^"]*")*)\s*(\/?)>/g;
 const ATTR = /([\w:.-]+)\s*=\s*"([^"]*)"/g;
 
 /**
@@ -24,7 +29,8 @@ export function parseXml(text: string): XmlElement {
 
     if (closing) {
       const open = stack.pop();
-      if (!open || open.tag !== tag) throw new Error(`Invalid XML: unexpected </${tag}>`);
+      if (!open || open.tag !== tag)
+        throw new Error(`Invalid XML: unexpected </${tag}>`);
       continue;
     }
 
@@ -35,11 +41,11 @@ export function parseXml(text: string): XmlElement {
     const parent = stack[stack.length - 1];
     if (parent) parent.children.push(el);
     else if (!root) root = el;
-    else throw new Error('Invalid XML: multiple root elements');
+    else throw new Error("Invalid XML: multiple root elements");
 
     if (!selfClosing) stack.push(el);
   }
 
-  if (!root || stack.length > 0) throw new Error('Invalid XML');
+  if (!root || stack.length > 0) throw new Error("Invalid XML");
   return root;
 }
