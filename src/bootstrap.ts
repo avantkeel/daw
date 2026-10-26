@@ -67,6 +67,12 @@ export function bootstrap(): void {
     const track = project.addTrack(undefined, channels);
     toolbar.setStatus(`Added ${track.name} (${channels === 1 ? 'mono' : 'stereo'})`);
   };
+  const deleteClip = (clipId: string) => {
+    const clip = project.findClip(clipId)?.clip;
+    if (!clip) return;
+    project.removeClip(clipId);
+    toolbar.setStatus(`Deleted ${clip.name} (Edit > Undo brings it back)`);
+  };
   const deleteTrack = (trackId: string) => {
     const track = project.getTracks().find((t) => t.id === trackId);
     if (!track) return;
@@ -117,7 +123,10 @@ export function bootstrap(): void {
     const trackId = timeline.locate(e.clientX, e.clientY).trackId;
     if (clipId) {
       // Right-click on a clip: rename that clip (the audio file it points to is not touched).
-      items.unshift({ label: 'Rename Clip', onSelect: () => timeline.beginRenameClip(clipId) });
+      items.unshift(
+        { label: 'Rename Clip', onSelect: () => timeline.beginRenameClip(clipId) },
+        { label: 'Delete Clip', onSelect: () => deleteClip(clipId) },
+      );
     } else if (trackId) {
       items.unshift(
         { label: 'Rename Track', onSelect: () => timeline.beginRenameTrack(trackId) },
