@@ -7,15 +7,49 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "start": "pnpm build && electron .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "package:win": "pnpm build && electron-builder --win --x64",
+    "package:win:portable": "pnpm build && electron-builder --win portable --x64",
+    "package:win:installer": "pnpm build && electron-builder --win nsis --x64"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
     "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
     "esbuild": "^0.24.0",
     "typescript": "^5.6.0"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["electron", "esbuild"]
-  }
+    "onlyBuiltDependencies": [
+      "electron",
+      "esbuild"
+    ]
+  },
+  "build": {
+    "appId": "com.minidaw.app",
+    "productName": "DAW",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}.${ext}"
+    }
+  },
+  "author": "mv"
 }
