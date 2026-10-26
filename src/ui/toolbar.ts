@@ -20,6 +20,7 @@ export class Toolbar {
   private lastPlaying: boolean | null = null;
   private mixerButton = byId<HTMLButtonElement>('btn-mixer');
   private mixer = byId<HTMLElement>('mixer');
+  private stage = byId<HTMLElement>('stage');
   private tempo = byId<HTMLInputElement>('tempo');
 
   constructor(h: ToolbarHandlers) {
@@ -28,6 +29,7 @@ export class Toolbar {
     this.mixerButton.addEventListener('click', () => {
       const open = this.mixer.hidden;
       this.mixer.hidden = !open;
+      this.stage.hidden = open;
       this.mixerButton.setAttribute('aria-pressed', String(open));
       h.onToggleMixer(open);
     });
