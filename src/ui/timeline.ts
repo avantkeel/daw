@@ -21,18 +21,18 @@ const VOL_X = 84;
 const VOL_W = HEADER_W - VOL_X - 14;
 
 const C = {
-  bg: '#1e1e1e',
-  lane: '#1e1e1e',
-  laneAlt: '#232324',
-  panel: '#252526',
-  border: '#3c3c3c',
-  text: '#cccccc',
-  dim: '#858585',
-  clip: '#0b3a5e',
-  clipSel: '#0e639c',
-  clipBorder: '#3794ff',
-  wave: '#9cdcfe',
-  accent: '#007acc',
+  bg: '#414548',
+  lane: '#484c4f',
+  laneAlt: '#4d5154',
+  panel: '#898b8d',
+  border: '#343638',
+  text: '#f0f0ef',
+  dim: '#c4c5c5',
+  clip: '#345b72',
+  clipSel: '#407994',
+  clipBorder: '#91b3c2',
+  wave: '#c9d5da',
+  accent: '#4a87a4',
   white: '#ffffff',
 };
 
@@ -516,14 +516,14 @@ export class Timeline {
     if (step * this.pps >= 4) {
       for (let tick = first; tick <= last; tick++) {
         if (tick % Math.round(1 / this.gridBeats) === 0) continue;
-        this.drawGridLine(tick * step, 'rgba(133, 133, 133, 0.16)');
+        this.drawGridLine(tick * step, 'rgba(220, 221, 220, 0.1)');
       }
     }
     if (beat * this.pps >= 4) {
       const firstBeat = Math.max(0, Math.floor(this.scrollX / beat));
       const lastBeat = Math.ceil(this.xToTime(this.w) / beat);
       for (let tick = firstBeat; tick <= lastBeat; tick++) {
-        this.drawGridLine(tick * beat, 'rgba(133, 133, 133, 0.38)');
+        this.drawGridLine(tick * beat, 'rgba(220, 221, 220, 0.24)');
       }
     }
     g.restore();
@@ -547,7 +547,7 @@ export class Timeline {
     const view = this.h - RULER_H;
     const thumbH = Math.max(20, (view * view) / (view + max));
     const thumbY = RULER_H + (this.scrollY / max) * (view - thumbH);
-    this.g.fillStyle = '#424242';
+    this.g.fillStyle = '#a0a2a3';
     this.g.fillRect(this.w - 6, thumbY, 4, thumbH);
   }
 
@@ -590,7 +590,7 @@ export class Timeline {
     this.project.getTracks().forEach((t, i) => {
       const y = this.trackY(i);
       const moving = this.drag?.mode === 'trackMove' && this.drag.trackId === t.id;
-      g.fillStyle = moving ? '#2d2d30' : C.panel;
+      g.fillStyle = moving ? '#666a6c' : C.panel;
       g.fillRect(0, y, HEADER_W, TRACK_H);
       g.fillStyle = C.border;
       g.fillRect(0, y + TRACK_H - 1, HEADER_W, 1);
@@ -659,13 +659,13 @@ export class Timeline {
 
     g.fillStyle = sel ? C.clipSel : C.clip;
     g.fillRect(r.x, r.y, r.w, r.h);
-    g.fillStyle = 'rgba(0,0,0,0.25)';
+    g.fillStyle = 'rgba(22, 23, 24, 0.3)';
     g.fillRect(r.x, r.y, r.w, TITLE_H);
 
     this.drawWave(c, r);
 
     // fades: shaded cut-away + gain line
-    g.fillStyle = 'rgba(0,0,0,0.4)';
+    g.fillStyle = 'rgba(22, 23, 24, 0.4)';
     g.strokeStyle = C.white;
     g.lineWidth = 1;
     if (c.fadeIn > 0) {
@@ -745,7 +745,7 @@ export class Timeline {
     g.stroke();
 
     if (p.channels.length > 1) {
-      g.fillStyle = 'rgba(0, 0, 0, 0.35)';
+      g.fillStyle = 'rgba(22, 23, 24, 0.32)';
       g.fillRect(x0, Math.round(top + laneH), x1 - x0, 1);
     }
   }

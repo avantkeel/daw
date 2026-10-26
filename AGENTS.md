@@ -142,12 +142,12 @@ Electron must stay removable by deleting `src/platform/electron/`, one line in
 
 ## UI / theme
 
-VS Code default dark look. Black/white/blue only, minimalist.
+Use a utilitarian early-2000s DAW visual style, inspired by the neutral gray interfaces of that era.
 
-- Background `#1e1e1e`, panels `#252526`, borders `#3c3c3c`, text `#cccccc`
-- Accent blue `#007acc` (status bar, primary button), light blue `#3794ff` for clip borders
-- Waveform `#9cdcfe`, playhead white
-- No gradients, shadows, or decorative effects. System font stack.
+- Gray should be the predominant color: neutral gray panels and track headers, darker gray timeline lanes, dark borders, and light gray text.
+- Reserve subdued blue for clips, selection, waveform accents, and key controls; avoid making the overall UI blue.
+- Prefer compact, square-edged controls and an Arial/Helvetica-style sans-serif font.
+- Keep the interface practical and restrained: no gradients, shadows, or decorative effects.
 
 ## Known limitations (fine to leave unless asked)
 
