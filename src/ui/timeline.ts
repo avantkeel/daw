@@ -246,6 +246,10 @@ export class Timeline {
       } else if (track && this.inChannelButton(x, y, ti)) {
         this.project.setChannels(track.id, track.channels === 1 ? 2 : 1);
       } else if (track && this.inVolume(x, y, ti)) {
+        if (e.ctrlKey) {
+          this.project.setVolume(track.id, 1);
+          return;
+        }
         // The whole drag is one undo step (finishEdit closes the batch).
         this.project.beginBatch();
         this.editing = true;

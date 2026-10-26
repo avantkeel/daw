@@ -133,9 +133,23 @@ export class Mixer {
     volume.max = '2';
     volume.step = '0.01';
     volume.setAttribute('aria-label', 'Track volume');
-    volume.addEventListener('pointerdown', () => this.project.beginBatch());
-    volume.addEventListener('pointerup', () => this.project.endBatch());
-    volume.addEventListener('pointercancel', () => this.project.endBatch());
+    let volumeBatchActive = false;
+    volume.addEventListener('pointerdown', (event) => {
+      if (event.ctrlKey) {
+        event.preventDefault();
+        this.project.setVolume(trackId, 1);
+        return;
+      }
+      this.project.beginBatch();
+      volumeBatchActive = true;
+    });
+    const endVolumeBatch = () => {
+      if (!volumeBatchActive) return;
+      volumeBatchActive = false;
+      this.project.endBatch();
+    };
+    volume.addEventListener('pointerup', endVolumeBatch);
+    volume.addEventListener('pointercancel', endVolumeBatch);
     volume.addEventListener('input', () => this.project.setVolume(trackId, Number(volume.value)));
     faderSlot.append(volume);
     controls.append(meter, faderSlot);
