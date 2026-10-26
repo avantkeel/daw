@@ -13,6 +13,16 @@
         <button id="btn-play">Play</button>
         <button id="btn-stop">Stop</button>
         <button id="btn-mixer" aria-pressed="false">Mixer</button>
+        <label class="toolbar-control" for="tempo">BPM</label>
+        <input id="tempo" class="toolbar-input" type="number" min="20" max="666" step="0.1" value="120" />
+        <label class="toolbar-control" for="grid">Grid</label>
+        <select id="grid" class="toolbar-select">
+          <option value="0">Off</option>
+          <option value="1">1/4</option>
+          <option value="0.5">1/8</option>
+          <option value="0.25" selected>1/16</option>
+          <option value="0.125">1/32</option>
+        </select>
         <span id="time" class="time">0:00.000</span>
         <span class="spacer"></span>
         <button id="btn-zoom-out" title="Zoom out">−</button>

@@ -8,6 +8,8 @@ export interface ToolbarHandlers {
   onExport(): void;
   onZoomIn(): void;
   onZoomOut(): void;
+  onTempoChange(tempo: number): void;
+  onGridChange(beats: number): void;
 }
 
 export class Toolbar {
@@ -18,6 +20,7 @@ export class Toolbar {
   private lastPlaying: boolean | null = null;
   private mixerButton = byId<HTMLButtonElement>('btn-mixer');
   private mixer = byId<HTMLElement>('mixer');
+  private tempo = byId<HTMLInputElement>('tempo');
 
   constructor(h: ToolbarHandlers) {
     this.play.addEventListener('click', h.onPlayPause);
@@ -31,6 +34,15 @@ export class Toolbar {
     byId('btn-export').addEventListener('click', h.onExport);
     byId('btn-zoom-in').addEventListener('click', h.onZoomIn);
     byId('btn-zoom-out').addEventListener('click', h.onZoomOut);
+    this.tempo.addEventListener('change', () => h.onTempoChange(this.tempo.valueAsNumber));
+    byId<HTMLSelectElement>('grid').addEventListener('change', (e) => {
+      h.onGridChange(Number((e.currentTarget as HTMLSelectElement).value));
+    });
+  }
+
+  setTempo(tempo: number): void {
+    const value = String(tempo);
+    if (this.tempo.value !== value) this.tempo.value = value;
   }
 
   setTime(sec: number): void {

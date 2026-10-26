@@ -57,6 +57,7 @@ export class Timeline {
   private pps = 100; // pixels per second
   private scrollX = 0; // seconds
   private scrollY = 0; // pixels, 0..maxScrollY()
+  private gridBeats = 0.25;
   private selected: Id | null = null;
   private drag: Drag | null = null;
   private editing = false; // a project batch (one undo step) is open for the current drag
@@ -109,6 +110,11 @@ export class Timeline {
   zoomBy(factor: number): void {
     const centerX = HEADER_W + (this.w - HEADER_W) / 2;
     this.zoomAt(centerX, factor);
+  }
+
+  setGridBeats(beats: number): void {
+    this.gridBeats = beats;
+    this.dirty = true;
   }
 
   /** Which track / timeline time is under a screen position (for drops). */
@@ -381,14 +387,14 @@ export class Timeline {
         const ti = Math.min(tracks.length - 1, Math.max(0, this.trackIndexAt(y)));
         const assetId = this.project.findClip(d.clipId)?.clip.assetId;
         this.canvas.style.cursor = assetId && this.project.accepts(tracks[ti].id, assetId) ? 'grabbing' : 'not-allowed';
-        this.project.moveClip(d.clipId, d.start + dt, tracks[ti].id);
+        this.project.moveClip(d.clipId, this.snapTime(d.start + dt), tracks[ti].id);
         break;
       }
       case 'trimStart':
-        this.project.trimStart(d.clipId, d.start + dt);
+        this.project.trimStart(d.clipId, this.snapTime(d.start + dt));
         break;
       case 'trimEnd':
-        this.project.trimEnd(d.clipId, d.end + dt);
+        this.project.trimEnd(d.clipId, this.snapTime(d.end + dt));
         break;
       case 'fadeIn':
         this.project.setFadeIn(d.clipId, d.fadeIn + dt);
@@ -420,6 +426,12 @@ export class Timeline {
     this.pps = Math.min(2000, Math.max(10, this.pps * factor));
     this.scrollX = Math.max(0, t - (screenX - HEADER_W) / this.pps);
     this.dirty = true;
+  }
+
+  private snapTime(time: number): number {
+    if (this.gridBeats <= 0) return Math.max(0, time);
+    const step = (60 / this.project.getTempo()) * this.gridBeats;
+    return Math.max(0, Math.round(time / step) * step);
   }
 
   private resize(): void {
@@ -461,6 +473,7 @@ export class Timeline {
     g.rect(HEADER_W, RULER_H, w - HEADER_W, h - RULER_H);
     g.clip();
     tracks.forEach((t, i) => t.clips.forEach((c) => this.drawClip(i, c)));
+    this.drawGrid();
     g.restore();
 
     if (tracks.length === 0) {
@@ -488,6 +501,43 @@ export class Timeline {
       g.closePath();
       g.fill();
     }
+  }
+
+  private drawGrid(): void {
+    if (this.gridBeats <= 0) return;
+    const g = this.g;
+    const beat = 60 / this.project.getTempo();
+    const step = beat * this.gridBeats;
+    const first = Math.max(0, Math.floor(this.scrollX / step));
+    const last = Math.ceil(this.xToTime(this.w) / step);
+    g.save();
+    g.lineWidth = 1;
+
+    if (step * this.pps >= 4) {
+      for (let tick = first; tick <= last; tick++) {
+        if (tick % Math.round(1 / this.gridBeats) === 0) continue;
+        this.drawGridLine(tick * step, 'rgba(133, 133, 133, 0.16)');
+      }
+    }
+    if (beat * this.pps >= 4) {
+      const firstBeat = Math.max(0, Math.floor(this.scrollX / beat));
+      const lastBeat = Math.ceil(this.xToTime(this.w) / beat);
+      for (let tick = firstBeat; tick <= lastBeat; tick++) {
+        this.drawGridLine(tick * beat, 'rgba(133, 133, 133, 0.38)');
+      }
+    }
+    g.restore();
+  }
+
+  private drawGridLine(time: number, color: string): void {
+    const x = Math.round(this.timeToX(time)) + 0.5;
+    if (x < HEADER_W || x > this.w) return;
+    const g = this.g;
+    g.strokeStyle = color;
+    g.beginPath();
+    g.moveTo(x, RULER_H);
+    g.lineTo(x, this.h);
+    g.stroke();
   }
 
   /** Thin vertical scroll indicator, only when the tracks don't all fit. */

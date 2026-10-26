@@ -28,6 +28,13 @@ export function bootstrap(): void {
     onToggleMixer: () => mixer.refresh(),
     onZoomIn: () => timeline.zoomBy(1.4),
     onZoomOut: () => timeline.zoomBy(1 / 1.4),
+    onTempoChange: (tempo) => {
+      if (!project.setTempo(tempo)) {
+        toolbar.setStatus('BPM must be between 20 and 666');
+        toolbar.setTempo(project.getTempo());
+      }
+    },
+    onGridChange: (beats) => timeline.setGridBeats(beats),
     onExport: async () => {
       if (project.duration() === 0) {
         toolbar.setStatus('Nothing to export yet. Drop some audio first.');
@@ -51,6 +58,8 @@ export function bootstrap(): void {
     () => engine.position,
     (t) => engine.seek(t),
   );
+  project.changed.subscribe(() => toolbar.setTempo(project.getTempo()));
+  toolbar.setTempo(project.getTempo());
 
   // Loaded before ProjectFiles exists, so the starting template doesn't count as an unsaved change.
   project.load(defaultTemplate(), []);

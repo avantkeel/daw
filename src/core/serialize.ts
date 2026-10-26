@@ -126,7 +126,7 @@ export function serializeProject(project: Project, opts: SerializeOptions): stri
   const root = x('Project', { version: '1.0' }, [
     x('Application', { name: opts.appName, version: opts.appVersion }),
     x('Transport', {}, [
-      x('Tempo', { max: 666, min: 20, unit: 'bpm', value: 120 }),
+      x('Tempo', { max: 666, min: 20, unit: 'bpm', value: project.getTempo() }),
       x('TimeSignature', { denominator: 4, numerator: 4 }),
     ]),
     x('Structure', {}, trackNodes),

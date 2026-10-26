@@ -190,7 +190,7 @@ export class ProjectFiles {
       }
 
       const all = [...assets.values()];
-      this.project.load(tracks, all.map((a) => a.ref));
+      this.project.load(tracks, all.map((a) => a.ref), parsed.tempo);
       this.current = opened.location;
       this.setDirty(false);
       this.updateTitle();

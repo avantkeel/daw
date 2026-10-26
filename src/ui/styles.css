@@ -39,6 +39,22 @@ body {
   min-width: 80px;
 }
 
+.toolbar-control { margin-left: 4px; }
+.toolbar-input,
+.toolbar-select {
+  height: 29px;
+  padding: 3px 6px;
+  background: #333333;
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  font: inherit;
+}
+.toolbar-input { width: 76px; }
+.toolbar-select { width: 78px; }
+.toolbar-input:focus-visible,
+.toolbar-select:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
+
 button {
   background: #333333;
   color: var(--fg);

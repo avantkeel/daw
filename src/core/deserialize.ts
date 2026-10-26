@@ -32,6 +32,7 @@ export interface ParsedTrack {
 
 export interface ParsedProject {
   tracks: ParsedTrack[];
+  tempo: number;
 }
 
 const child = (el: XmlElement | undefined, tag: string) => el?.children.find((c) => c.tag === tag);
@@ -48,6 +49,7 @@ const baseName = (p: string) => p.split(/[\\/]/).pop() ?? p;
 export function parseProject(xml: string): ParsedProject {
   const root = parseXml(xml);
   if (root.tag !== 'Project') throw new Error('Not a valid project file');
+  const tempo = Math.min(666, Math.max(20, num(child(child(root, 'Transport'), 'Tempo')?.attrs.value, 120)));
 
   const trackEls = (child(root, 'Structure')?.children ?? []).filter(
     (t) => t.tag === 'Track' && child(t, 'Channel')?.attrs.role !== 'master',
@@ -72,7 +74,7 @@ export function parseProject(xml: string): ParsedProject {
     };
   });
 
-  return { tracks };
+  return { tracks, tempo };
 }
 
 function parseClip(el: XmlElement): ParsedClip | null {

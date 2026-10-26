@@ -28,6 +28,7 @@ export class Project {
   readonly changed = new Emitter();
   private tracks: Track[] = [];
   private assets = new Map<Id, AssetRef>();
+  private tempo = 120;
 
   private undoStack: string[] = [];
   private redoStack: string[] = [];
@@ -38,9 +39,23 @@ export class Project {
     return this.tracks;
   }
 
+  getTempo(): number {
+    return this.tempo;
+  }
+
+  setTempo(tempo: number): boolean {
+    if (!Number.isFinite(tempo) || tempo < 20 || tempo > 666) return false;
+    if (this.tempo !== tempo) {
+      this.tempo = tempo;
+      this.changed.emit();
+    }
+    return true;
+  }
+
   /** Replaces the whole project (used when opening a file). Ids are generated here. Clears undo history. */
-  load(tracks: TrackData[], assets: AssetRef[]): void {
+  load(tracks: TrackData[], assets: AssetRef[], tempo = 120): void {
     this.assets = new Map(assets.map((a) => [a.id, a]));
+    this.tempo = Number.isFinite(tempo) && tempo >= 20 && tempo <= 666 ? tempo : 120;
     this.tracks = tracks.map((t) => ({
       id: uid('track'),
       name: t.name,

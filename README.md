@@ -15,6 +15,7 @@ Drag audio in, move / trim / fade clips, play, export WAV. No MIDI, no plugins.
 - Mono audio only goes on mono tracks and stereo audio only on stereo tracks: dragging a clip onto the other kind of track leaves it where it was (the cursor shows a not-allowed sign)
 - Click the Mono/Stereo label (boxed when the track is empty) in a track header to switch that track's layout
 - Drag clip body: move (also between tracks). Clips on a track can't overlap: if a move, trim or drop would overlap another clip you are asked whether to delete that clip; Cancel puts the clip back (or doesn't add the dropped file)
+- Set BPM and Grid in the toolbar to snap moved clips to beat subdivisions. Grid Off disables snapping; snapping changes clip position only and never changes playback speed or duration. BPM is saved with the project.
 - Drag clip left/right edge: trim
 - Drag the white square handles at the top corners: fade in / fade out
 - File > New Project / Ctrl+N: starts an empty project (asks to save first if there are unsaved changes; same for Open and Exit)
