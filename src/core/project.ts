@@ -47,6 +47,7 @@ export class Project {
       channels: t.channels,
       volume: t.volume,
       muted: t.muted,
+      solo: t.solo,
       clips: t.clips.map((c) => ({ ...c, id: uid('clip') })),
     }));
     this.undoStack = [];
@@ -192,7 +193,7 @@ export class Project {
 
   addTrack(name = `Track ${this.tracks.length + 1}`, channels: ChannelCount = 2): Track {
     return this.change(() => {
-      const track: Track = { id: uid('track'), name, channels, volume: 1, muted: false, clips: [] };
+      const track: Track = { id: uid('track'), name, channels, volume: 1, muted: false, solo: false, clips: [] };
       this.tracks.push(track);
       return track;
     });
@@ -215,6 +216,12 @@ export class Project {
     const t = this.tracks.find((x) => x.id === trackId);
     if (!t) return;
     this.change(() => (t.muted = muted));
+  }
+
+  setSolo(trackId: Id, solo: boolean): void {
+    const t = this.tracks.find((x) => x.id === trackId);
+    if (!t || t.solo === solo) return;
+    this.change(() => (t.solo = solo));
   }
 
   renameTrack(trackId: Id, name: string): void {

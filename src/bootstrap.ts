@@ -10,6 +10,7 @@ import { Timeline } from './ui/timeline';
 import { MenuBar } from './ui/menubar';
 import { showContextMenu } from './ui/contextmenu';
 import { Toolbar } from './ui/toolbar';
+import { Mixer } from './ui/mixer';
 import { createPlatform } from './platform-factory';
 import { ProjectFiles } from './project-files';
 
@@ -17,12 +18,14 @@ export function bootstrap(): void {
   const project = new Project();
   const engine = new AudioEngine(project);
   const platform = createPlatform();
+  const mixer = new Mixer(byId('mixer'), project);
 
   const togglePlay = () => (engine.playing ? engine.pause() : void engine.play());
 
   const toolbar = new Toolbar({
     onPlayPause: togglePlay,
     onStop: () => engine.stop(),
+    onToggleMixer: () => mixer.refresh(),
     onZoomIn: () => timeline.zoomBy(1.4),
     onZoomOut: () => timeline.zoomBy(1 / 1.4),
     onExport: async () => {

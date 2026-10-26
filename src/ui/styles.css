@@ -64,6 +64,69 @@ button.primary:hover { background: var(--accent-hover); }
   pointer-events: none;
 }
 
+.mixer {
+  flex: 0 0 210px;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+}
+.mixer[hidden] { display: none; }
+.mixer-heading {
+  height: 25px;
+  padding: 4px 10px;
+  color: var(--fg);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.mixer-bank { display: flex; height: calc(100% - 25px); width: max-content; }
+.mixer-strip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  width: 78px;
+  height: 100%;
+  padding: 7px 8px;
+  border-right: 1px solid var(--border);
+}
+.mixer-track-name {
+  width: 100%;
+  overflow: hidden;
+  color: #fff;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mixer-fader-slot {
+  position: relative;
+  width: 30px;
+  min-height: 0;
+  flex: 1;
+}
+.mixer-fader {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 125px;
+  height: 20px;
+  accent-color: var(--accent);
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+.mixer-readout {
+  color: var(--fg);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.mixer-buttons { display: flex; gap: 4px; }
+.mixer-toggle {
+  width: 27px;
+  padding: 2px 0;
+  text-align: center;
+}
+.mixer-toggle.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
 .status {
   padding: 3px 10px;
   background: var(--accent);

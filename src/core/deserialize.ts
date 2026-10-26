@@ -26,6 +26,7 @@ export interface ParsedTrack {
   channels: ChannelCount;
   volume: number;
   muted: boolean;
+  solo: boolean;
   clips: ParsedClip[];
 }
 
@@ -66,6 +67,7 @@ export function parseProject(xml: string): ParsedProject {
       channels: trackChannelsFor(num(channel?.attrs.audioChannels, 2)),
       volume: num(child(channel, 'Volume')?.attrs.value, 1),
       muted: child(channel, 'Mute')?.attrs.value === 'true',
+      solo: channel?.attrs.solo === 'true',
       clips: clipEls.filter((c) => c.tag === 'Clip').flatMap((c) => parseClip(c) ?? []),
     };
   });

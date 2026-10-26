@@ -71,7 +71,7 @@ export function serializeProject(project: Project, opts: SerializeOptions): stri
     const trackId = id();
     trackNodes.push(
       x('Track', { contentType: 'audio', loaded: true, id: trackId, name: t.name }, [
-        x('Channel', { audioChannels: t.channels, destination: masterChannelId, role: 'regular', solo: false, id: id() }, [
+        x('Channel', { audioChannels: t.channels, destination: masterChannelId, role: 'regular', solo: t.solo, id: id() }, [
           x('Volume', { max: 2, min: 0, unit: 'linear', value: t.volume }),
           x('Pan', { max: 1, min: 0, unit: 'normalized', value: 0.5 }),
           x('Mute', { value: t.muted }),

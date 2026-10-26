@@ -23,9 +23,10 @@ export function scheduleProject(
   const sources: AudioBufferSourceNode[] = [];
   const nodes: AudioNode[] = [];
   const T = (timelineTime: number) => when + (timelineTime - from);
+  const hasSolo = tracks.some((track) => track.solo);
 
   for (const track of tracks) {
-    if (track.muted) continue;
+    if (track.muted || (hasSolo && !track.solo)) continue;
     const trackGain = ctx.createGain();
     trackGain.gain.value = track.volume;
     // Fixes the track's channel layout: stereo clips on a mono track are downmixed,

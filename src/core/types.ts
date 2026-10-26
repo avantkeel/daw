@@ -28,6 +28,7 @@ export interface Track {
   channels: ChannelCount;
   volume: number;
   muted: boolean;
+  solo: boolean;
   clips: Clip[];
 }
 
@@ -50,13 +51,14 @@ export interface TrackData {
   channels: ChannelCount;
   volume: number;
   muted: boolean;
+  solo: boolean;
   clips: ClipData[];
 }
 
 /** The tracks a new project starts with: two stereo, two mono. */
 export const defaultTemplate = (): TrackData[] => [
-  { name: 'Stereo 1', channels: 2, volume: 1, muted: false, clips: [] },
-  { name: 'Stereo 2', channels: 2, volume: 1, muted: false, clips: [] },
-  { name: 'Mono 1', channels: 1, volume: 1, muted: false, clips: [] },
-  { name: 'Mono 2', channels: 1, volume: 1, muted: false, clips: [] },
+  { name: 'Stereo 1', channels: 2, volume: 1, muted: false, solo: false, clips: [] },
+  { name: 'Stereo 2', channels: 2, volume: 1, muted: false, solo: false, clips: [] },
+  { name: 'Mono 1', channels: 1, volume: 1, muted: false, solo: false, clips: [] },
+  { name: 'Mono 2', channels: 1, volume: 1, muted: false, solo: false, clips: [] },
 ];

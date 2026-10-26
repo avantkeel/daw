@@ -12,6 +12,7 @@
       <header class="toolbar">
         <button id="btn-play">Play</button>
         <button id="btn-stop">Stop</button>
+        <button id="btn-mixer" aria-pressed="false">Mixer</button>
         <span id="time" class="time">0:00.000</span>
         <span class="spacer"></span>
         <button id="btn-zoom-out" title="Zoom out">−</button>
@@ -19,6 +20,7 @@
         <button id="btn-export" class="primary">Export WAV</button>
       </header>
       <main id="stage" class="stage"><canvas id="timeline"></canvas></main>
+      <section id="mixer" class="mixer" aria-label="Mixer" hidden></section>
       <footer id="status" class="status">Drop audio files on the timeline. Space plays, Delete removes the selected clip, Ctrl+wheel zooms.</footer>
     </div>
     <script src="renderer.js"></script>

@@ -186,7 +186,7 @@ export class ProjectFiles {
             fadeOut: Math.min(pc.fadeOut, duration - fadeIn),
           });
         }
-        tracks.push({ name: pt.name, channels: pt.channels, volume: pt.volume, muted: pt.muted, clips });
+        tracks.push({ name: pt.name, channels: pt.channels, volume: pt.volume, muted: pt.muted, solo: pt.solo, clips });
       }
 
       const all = [...assets.values()];
