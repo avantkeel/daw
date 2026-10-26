@@ -1,5 +1,5 @@
 import { fadeGainAt } from '../core/fades';
-import type { Track } from '../core/types';
+import type { Id, Track } from '../core/types';
 import type { AssetStore } from './assets';
 
 export interface ScheduledPlayback {
@@ -19,6 +19,7 @@ export function scheduleProject(
   assets: AssetStore,
   from: number,
   when: number,
+  trackMeters?: Map<Id, AnalyserNode>,
 ): ScheduledPlayback {
   const sources: AudioBufferSourceNode[] = [];
   const nodes: AudioNode[] = [];
@@ -34,8 +35,15 @@ export function scheduleProject(
     trackGain.channelCount = track.channels;
     trackGain.channelCountMode = 'explicit';
     trackGain.channelInterpretation = 'speakers';
-    trackGain.connect(destination);
+    const meter = trackMeters?.get(track.id);
+    if (meter) {
+      trackGain.connect(meter);
+      meter.connect(destination);
+    } else {
+      trackGain.connect(destination);
+    }
     nodes.push(trackGain);
+    if (meter) nodes.push(meter);
 
     for (const clip of track.clips) {
       const end = clip.start + clip.duration;

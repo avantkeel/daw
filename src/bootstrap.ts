@@ -18,7 +18,7 @@ export function bootstrap(): void {
   const project = new Project();
   const engine = new AudioEngine(project);
   const platform = createPlatform();
-  const mixer = new Mixer(byId('mixer'), project);
+  const mixer = new Mixer(byId('mixer'), project, () => engine.getTrackLevels());
 
   const togglePlay = () => (engine.playing ? engine.pause() : void engine.play());
 

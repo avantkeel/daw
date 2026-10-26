@@ -6,6 +6,8 @@ interface Strip {
   name: HTMLElement;
   volume: HTMLInputElement;
   readout: HTMLElement;
+  meter: HTMLElement;
+  meterFill: HTMLElement;
   mute: HTMLButtonElement;
   solo: HTMLButtonElement;
 }
@@ -13,10 +15,27 @@ interface Strip {
 export class Mixer {
   private strips = new Map<Id, Strip>();
   private trackOrder = '';
+  private viewport!: HTMLElement;
+  private scrollControl!: HTMLInputElement;
+  private resizeObserver?: ResizeObserver;
 
-  constructor(private root: HTMLElement, private project: Project) {
+  constructor(
+    private root: HTMLElement,
+    private project: Project,
+    private getTrackLevels: () => ReadonlyMap<Id, number>,
+  ) {
     this.project.changed.subscribe(() => this.refresh());
     this.refresh();
+    const updateMeters = () => {
+      const levels = this.getTrackLevels();
+      for (const [trackId, strip] of this.strips) {
+        const level = levels.get(trackId) ?? 0;
+        strip.meterFill.style.height = `${level * 100}%`;
+        strip.meter.setAttribute('aria-valuenow', String(Math.round(level * 100)));
+      }
+      requestAnimationFrame(updateMeters);
+    };
+    requestAnimationFrame(updateMeters);
   }
 
   refresh(): void {
@@ -35,10 +54,12 @@ export class Mixer {
       strip.solo.classList.toggle('active', track.solo);
       strip.solo.setAttribute('aria-pressed', String(track.solo));
     }
+    this.updateScrollControl();
   }
 
   private buildStrips(order: string): void {
     this.trackOrder = order;
+    this.resizeObserver?.disconnect();
     this.strips.clear();
     this.root.replaceChildren();
 
@@ -47,15 +68,38 @@ export class Mixer {
     heading.textContent = 'Mixer';
     this.root.append(heading);
 
+    this.viewport = document.createElement('div');
+    this.viewport.className = 'mixer-viewport';
+    this.root.append(this.viewport);
+
     const bank = document.createElement('div');
     bank.className = 'mixer-bank';
-    this.root.append(bank);
+    this.viewport.append(bank);
 
     for (const track of this.project.getTracks()) {
       const strip = this.createStrip(track.id);
       this.strips.set(track.id, strip);
       bank.append(strip.element);
     }
+
+    this.scrollControl = document.createElement('input');
+    this.scrollControl.className = 'mixer-scroll-control';
+    this.scrollControl.type = 'range';
+    this.scrollControl.min = '0';
+    this.scrollControl.max = '1';
+    this.scrollControl.step = '1';
+    this.scrollControl.value = '0';
+    this.scrollControl.setAttribute('aria-label', 'Scroll mixer channels');
+    this.scrollControl.addEventListener('input', () => {
+      this.viewport.scrollLeft = Number(this.scrollControl.value);
+    });
+    this.viewport.addEventListener('scroll', () => this.updateScrollControl());
+    this.root.append(this.scrollControl);
+
+    this.resizeObserver = new ResizeObserver(() => this.updateScrollControl());
+    this.resizeObserver.observe(this.viewport);
+    this.resizeObserver.observe(bank);
+    this.updateScrollControl();
   }
 
   private createStrip(trackId: Id): Strip {
@@ -67,6 +111,20 @@ export class Mixer {
 
     const faderSlot = document.createElement('div');
     faderSlot.className = 'mixer-fader-slot';
+
+    const controls = document.createElement('div');
+    controls.className = 'mixer-control-row';
+
+    const meter = document.createElement('div');
+    meter.className = 'mixer-meter';
+    meter.setAttribute('role', 'meter');
+    meter.setAttribute('aria-label', 'Track audio level');
+    meter.setAttribute('aria-valuemin', '0');
+    meter.setAttribute('aria-valuemax', '100');
+    meter.setAttribute('aria-valuenow', '0');
+    const meterFill = document.createElement('div');
+    meterFill.className = 'mixer-meter-fill';
+    meter.append(meterFill);
 
     const volume = document.createElement('input');
     volume.className = 'mixer-fader';
@@ -80,6 +138,7 @@ export class Mixer {
     volume.addEventListener('pointercancel', () => this.project.endBatch());
     volume.addEventListener('input', () => this.project.setVolume(trackId, Number(volume.value)));
     faderSlot.append(volume);
+    controls.append(meter, faderSlot);
 
     const readout = document.createElement('output');
     readout.className = 'mixer-readout';
@@ -95,9 +154,18 @@ export class Mixer {
       if (track) this.project.setSolo(trackId, !track.solo);
     });
     buttons.append(mute, solo);
-    element.append(name, faderSlot, readout, buttons);
+    element.append(name, buttons, controls, readout);
 
-    return { element, name, volume, readout, mute, solo };
+    return { element, name, volume, readout, meter, meterFill, mute, solo };
+  }
+
+  private updateScrollControl(): void {
+    if (!this.viewport || !this.scrollControl) return;
+    const max = Math.max(0, this.viewport.scrollWidth - this.viewport.clientWidth);
+    this.scrollControl.max = String(Math.max(1, max));
+    this.scrollControl.value = String(Math.min(max, this.viewport.scrollLeft));
+    const progress = max > 0 ? this.viewport.scrollLeft / max : 0;
+    this.scrollControl.style.setProperty('--scroll-progress', `${progress * 100}%`);
   }
 
   private createButton(label: string, title: string, onClick: () => void): HTMLButtonElement {
