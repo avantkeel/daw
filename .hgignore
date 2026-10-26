@@ -1,0 +1,4 @@
+.git/
+dist/
+release/
+node_modules/
