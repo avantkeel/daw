@@ -97,6 +97,15 @@ export function bootstrap(): void {
     project.removeClip(clipId);
     toolbar.setStatus(`Deleted ${clip.name} (Edit > Undo brings it back)`);
   };
+  const splitClip = (clipId: string) => {
+    const clip = project.findClip(clipId)?.clip;
+    if (!clip) return;
+    toolbar.setStatus(
+      timeline.splitClipAtPlayhead(clipId)
+        ? `Split ${clip.name} at playhead`
+        : "Move the playhead inside the clip to split it",
+    );
+  };
   const deleteTrack = (trackId: string) => {
     const track = project.getTracks().find((t) => t.id === trackId);
     if (!track) return;
@@ -175,6 +184,7 @@ export function bootstrap(): void {
           label: "Rename Clip",
           onSelect: () => timeline.beginRenameClip(clipId),
         },
+        { label: "Split Clip at Playhead", onSelect: () => splitClip(clipId) },
         { label: "Delete Clip", onSelect: () => deleteClip(clipId) },
       );
     } else if (trackId) {
@@ -264,7 +274,13 @@ export function bootstrap(): void {
       else if (key === "q") void files.exit();
       else if (key === "z" && !e.shiftKey) undo();
       else if (key === "y") redo();
-      else return;
+      else if (key === "e") {
+        toolbar.setStatus(
+          timeline.splitSelectedClipAtPlayhead()
+            ? "Split selected clip at playhead"
+            : "Select a clip and place the playhead inside it to split",
+        );
+      } else return;
       e.preventDefault();
       return;
     }

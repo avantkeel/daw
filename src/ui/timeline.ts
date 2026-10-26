@@ -156,6 +156,18 @@ export class Timeline {
     return this.hit(x, y)?.clip.id ?? null;
   }
 
+  /** Splits a clip at the current playhead and keeps the original clip selected. */
+  splitClipAtPlayhead(clipId: Id): boolean {
+    if (!this.project.splitClip(clipId, this.getPlayhead())) return false;
+    this.selected = clipId;
+    this.dirty = true;
+    return true;
+  }
+
+  splitSelectedClipAtPlayhead(): boolean {
+    return this.selected !== null && this.splitClipAtPlayhead(this.selected);
+  }
+
   /** Shows a text box over the track's name in its header. */
   beginRenameTrack(trackId: Id): void {
     const ti = this.project.getTracks().findIndex((t) => t.id === trackId);

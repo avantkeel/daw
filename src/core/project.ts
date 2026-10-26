@@ -342,6 +342,34 @@ export class Project {
     });
   }
 
+  /** Splits a clip at a timeline position, retaining its source and outer fades. */
+  splitClip(id: Id, time: number): Clip | undefined {
+    const found = this.findClip(id);
+    if (!found || !Number.isFinite(time)) return undefined;
+    const clip = found.clip;
+    const leftDuration = time - clip.start;
+    const rightDuration = clip.start + clip.duration - time;
+    if (leftDuration < MIN_CLIP || rightDuration < MIN_CLIP) return undefined;
+
+    return this.change(() => {
+      const right: Clip = {
+        ...clip,
+        id: uid("clip"),
+        start: time,
+        offset: clip.offset + leftDuration,
+        duration: rightDuration,
+        fadeIn: 0,
+      };
+      clip.duration = leftDuration;
+      clip.fadeOut = 0;
+      this.fitFades(clip);
+      this.fitFades(right);
+      const index = found.track.clips.indexOf(clip);
+      found.track.clips.splice(index + 1, 0, right);
+      return right;
+    });
+  }
+
   /** Moves a clip in time and, if `trackId` can take its audio (see `accepts`), to that track. Otherwise it stays on its track. */
   moveClip(id: Id, start: number, trackId?: Id): void {
     const found = this.findClip(id);
