@@ -9,7 +9,8 @@ export class AudioEngine {
 
   private scheduled: ScheduledPlayback | null = null;
   private startedAt = 0; // ctx time that maps to startPos
-  private startPos = 0; // timeline position at startedAt (or paused position)
+  private startPos = 0; // timeline position at startedAt
+  private cuePosition = 0; // selected timeline position to return to when playback pauses
   private _playing = false;
   private restartTimer: number | undefined;
   private meters = new Map<Id, AnalyserNode>();
@@ -20,7 +21,7 @@ export class AudioEngine {
       if (!this._playing) return;
       window.clearTimeout(this.restartTimer);
       this.restartTimer = window.setTimeout(() => {
-        if (this._playing) void this.play(this.position);
+        if (this._playing) void this.startPlayback(this.position);
       }, 120);
     });
   }
@@ -34,7 +35,7 @@ export class AudioEngine {
   }
 
   get position(): number {
-    if (!this._playing) return this.startPos;
+    if (!this._playing) return this.cuePosition;
     return this.startPos + Math.max(0, this.ctx.currentTime - this.startedAt);
   }
 
@@ -53,6 +54,11 @@ export class AudioEngine {
   }
 
   async play(from: number = this.position): Promise<void> {
+    this.cuePosition = Math.max(0, from);
+    await this.startPlayback(this.cuePosition);
+  }
+
+  private async startPlayback(from: number): Promise<void> {
     await this.ctx.resume();
     this.scheduled?.stop();
     this.meters.clear();
@@ -74,18 +80,17 @@ export class AudioEngine {
       when,
       this.meters,
     );
-    this.startPos = from;
+    this.startPos = Math.max(0, from);
     this.startedAt = when;
     this._playing = true;
   }
 
   pause(): void {
-    const p = this.position;
     this.scheduled?.stop();
     this.scheduled = null;
     this.meters.clear();
     this._playing = false;
-    this.startPos = p;
+    this.startPos = this.cuePosition;
   }
 
   stop(): void {
@@ -93,12 +98,14 @@ export class AudioEngine {
     this.scheduled = null;
     this.meters.clear();
     this._playing = false;
+    this.cuePosition = 0;
     this.startPos = 0;
   }
 
   seek(t: number): void {
     const p = Math.max(0, t);
-    if (this._playing) void this.play(p);
+    this.cuePosition = p;
+    if (this._playing) void this.startPlayback(p);
     else this.startPos = p;
   }
 }

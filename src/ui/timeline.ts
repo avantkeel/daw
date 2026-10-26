@@ -205,9 +205,10 @@ export class Timeline {
       const top = r.y + TITLE_H;
       if (near(r.x + clip.fadeIn * this.pps, top)) return { clip, mode: 'fadeIn' };
       if (near(r.x + r.w - clip.fadeOut * this.pps, top)) return { clip, mode: 'fadeOut' };
+      if (y < r.y + TITLE_H) return { clip, mode: 'move' };
       if (x - r.x < EDGE) return { clip, mode: 'trimStart' };
       if (r.x + r.w - x < EDGE) return { clip, mode: 'trimEnd' };
-      return { clip, mode: 'move' };
+      return { clip, mode: 'seek' };
     }
     return null;
   }
@@ -222,13 +223,8 @@ export class Timeline {
       return;
     }
     const h = this.hit(x, y);
-    this.canvas.style.cursor = !h
-      ? 'default'
-      : h.mode === 'trimStart' || h.mode === 'trimEnd'
-        ? 'ew-resize'
-        : h.mode === 'fadeIn' || h.mode === 'fadeOut'
-          ? 'pointer'
-          : 'grab';
+    this.canvas.style.cursor =
+      h?.mode === 'move' || h?.mode === 'fadeIn' || h?.mode === 'fadeOut' ? 'grab' : 'text';
   }
 
   private onDown(e: MouseEvent): void {
@@ -237,7 +233,7 @@ export class Timeline {
 
     if (y < RULER_H && x >= HEADER_W) {
       this.drag = { mode: 'seek', startX: x, start: 0, end: 0, fadeIn: 0, fadeOut: 0 };
-      this.onSeek(Math.max(0, this.xToTime(x)));
+      this.onSeek(this.snapTime(this.xToTime(x)));
       return;
     }
 
@@ -271,7 +267,7 @@ export class Timeline {
 
     const h = this.hit(x, y);
     this.selected = h?.clip.id ?? null;
-    if (h) {
+    if (h && h.mode !== 'seek') {
       const c = h.clip;
       this.project.beginBatch();
       this.editing = true;
@@ -284,6 +280,9 @@ export class Timeline {
         fadeIn: c.fadeIn,
         fadeOut: c.fadeOut,
       };
+    } else {
+      this.drag = { mode: 'seek', startX: x, start: 0, end: 0, fadeIn: 0, fadeOut: 0 };
+      this.onSeek(this.snapTime(this.xToTime(x)));
     }
     this.dirty = true;
   }
@@ -375,7 +374,7 @@ export class Timeline {
     }
 
     if (d.mode === 'seek') {
-      this.onSeek(Math.max(0, this.xToTime(x)));
+      this.onSeek(this.snapTime(this.xToTime(x)));
       return;
     }
     if (!d.clipId) return;
@@ -397,9 +396,11 @@ export class Timeline {
         this.project.trimEnd(d.clipId, this.snapTime(d.end + dt));
         break;
       case 'fadeIn':
+        this.canvas.style.cursor = 'grabbing';
         this.project.setFadeIn(d.clipId, d.fadeIn + dt);
         break;
       case 'fadeOut':
+        this.canvas.style.cursor = 'grabbing';
         this.project.setFadeOut(d.clipId, d.fadeOut - dt);
         break;
     }
@@ -659,7 +660,7 @@ export class Timeline {
 
     g.fillStyle = sel ? C.clipSel : C.clip;
     g.fillRect(r.x, r.y, r.w, r.h);
-    g.fillStyle = 'rgba(22, 23, 24, 0.3)';
+    g.fillStyle = sel ? C.accent : 'rgba(22, 23, 24, 0.3)';
     g.fillRect(r.x, r.y, r.w, TITLE_H);
 
     this.drawWave(c, r);
@@ -717,6 +718,7 @@ export class Timeline {
     }
 
     g.strokeStyle = sel ? C.white : C.clipBorder;
+    g.lineWidth = sel ? 2 : 1;
     g.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
   }
 
