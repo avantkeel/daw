@@ -13,9 +13,7 @@ export class AssetStore {
 
   constructor(private ctx: BaseAudioContext) {}
 
-  async importFile(
-    file: File,
-  ): Promise<{
+  async importFile(file: File): Promise<{
     assetId: Id;
     name: string;
     duration: number;
@@ -26,9 +24,7 @@ export class AssetStore {
     return { ...asset, name: file.name };
   }
 
-  async importBuffer(
-    data: ArrayBuffer,
-  ): Promise<{
+  async importBuffer(data: ArrayBuffer): Promise<{
     assetId: Id;
     duration: number;
     sampleRate: number;
