@@ -701,14 +701,20 @@ export class Timeline {
     g.fillRect(r.x + r.w - c.fadeOut * this.pps - HANDLE, top - HANDLE, HANDLE * 2, HANDLE * 2);
 
     // title
-    g.save();
-    g.beginPath();
-    g.rect(r.x, r.y, r.w, TITLE_H);
-    g.clip();
-    g.fillStyle = C.white;
-    g.font = '11px system-ui, sans-serif';
-    g.fillText(c.name, r.x + 6, r.y + 12);
-    g.restore();
+    const titleLeft = Math.max(r.x, HEADER_W);
+    const titleRight = Math.min(r.x + r.w, this.w);
+    const titleX = Math.max(r.x + 6, titleLeft + 6);
+    const titleWidth = titleRight - titleX - 4;
+    if (titleWidth > 0) {
+      g.save();
+      g.beginPath();
+      g.rect(titleLeft, r.y, titleRight - titleLeft, TITLE_H);
+      g.clip();
+      g.fillStyle = C.white;
+      g.font = '11px system-ui, sans-serif';
+      g.fillText(this.fit(c.name, titleWidth), titleX, r.y + 12);
+      g.restore();
+    }
 
     g.strokeStyle = sel ? C.white : C.clipBorder;
     g.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
