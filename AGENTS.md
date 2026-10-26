@@ -151,7 +151,7 @@ Use a utilitarian early-2000s DAW visual style, inspired by the neutral gray int
 
 ## Known limitations (fine to leave unless asked)
 
-- Undo/redo covers track and clip edits only (not file-path changes from Copy Audio, not dropped assets); history is in memory, capped at 100 steps. No clip splitting. The dirty flag is "any edit since the last save", so undoing back to the saved state still counts as unsaved.
+- Undo/redo covers track and clip edits only (not file-path changes from Copy Audio, not dropped assets); history is in memory, capped at 100 steps. The dirty flag is "any edit since the last save", so undoing back to the saved state still counts as unsaved.
 - Saved projects only contain the audio if the user ran Copy Audio to Project Folder; otherwise just references. If a source file is moved, its clips open silent.
 - In the browser build, projects can be saved and opened but audio can't be reloaded (no file paths).
 - Edits during playback restart playback from the current position after a ~120 ms debounce.
