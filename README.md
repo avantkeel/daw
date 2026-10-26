@@ -4,6 +4,8 @@ Drag audio in, move / trim / fade clips, play, export WAV. No MIDI, no plugins.
 
     pnpm install
     pnpm start        # build + launch Electron
+    pnpm format -- <files>       # format changed files with Prettier
+    pnpm format:check -- <files> # verify formatting
     pnpm typecheck
 
 ## Controls

@@ -10,9 +10,13 @@ pnpm install
 pnpm start        # build + launch Electron
 pnpm build        # bundle to dist/ (esbuild)
 pnpm typecheck    # tsc --noEmit, run this after every change
+pnpm format -- <files>       # format changed files with Prettier
+pnpm format:check -- <files> # verify formatting
 ```
 
-There is no test runner, linter, or watch mode yet.
+There is no test runner, linter, or watch mode yet. Whenever you edit code or
+configuration, run `pnpm format -- <all changed files Prettier supports>` before
+finishing. Keep formatting scoped to the files you changed.
 
 ## Scope (do not expand without being asked)
 
@@ -155,7 +159,9 @@ VS Code default dark look. Black/white/blue only, minimalist.
 
 ## Before finishing a change
 
-1. `pnpm typecheck` passes.
-2. `pnpm build` passes.
-3. No dependency-rule violations (check imports against the rules above).
-4. README.md and this file updated if folders, commands, or rules changed.
+1. Format all changed code and configuration files with `pnpm format -- <files>`
+   and verify them with `pnpm format:check -- <files>`.
+2. `pnpm typecheck` passes.
+3. `pnpm build` passes.
+4. No dependency-rule violations (check imports against the rules above).
+5. README.md and this file updated if folders, commands, or rules changed.
