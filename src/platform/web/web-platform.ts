@@ -8,6 +8,7 @@ import type {
 /** Browser fallback: triggers normal downloads. Also proves the app doesn't need Electron. */
 export class WebPlatform implements Platform {
   readonly name = "web";
+  readonly supportsMixerWindow = false;
   private dirty = false;
 
   constructor() {
@@ -22,6 +23,30 @@ export class WebPlatform implements Platform {
   setDirty(dirty: boolean): void {
     this.dirty = dirty;
   }
+
+  async toggleMixerWindow(): Promise<boolean> {
+    const mixer = document.getElementById("mixer");
+    const stage = document.getElementById("stage");
+    if (!mixer || !stage) return false;
+    const open = mixer.hidden;
+    mixer.hidden = !open;
+    stage.hidden = open;
+    return open;
+  }
+
+  updateMixerState(): void {}
+
+  onMixerAction(): void {}
+
+  onMixerState(): void {}
+
+  onMixerReady(): void {}
+
+  onMixerWindowClosed(): void {}
+
+  sendMixerAction(): void {}
+
+  notifyMixerReady(): void {}
 
   /** Never called: the browser handles closing itself (see the constructor). */
   onCloseRequested(): void {}

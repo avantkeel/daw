@@ -4,7 +4,7 @@ import { formatTime } from "./format";
 export interface ToolbarHandlers {
   onPlayPause(): void;
   onStop(): void;
-  onToggleMixer(open: boolean): void;
+  onToggleMixer(): void;
   onExport(): void;
   onZoomIn(): void;
   onZoomOut(): void;
@@ -19,20 +19,12 @@ export class Toolbar {
   private lastTime = "";
   private lastPlaying: boolean | null = null;
   private mixerButton = byId<HTMLButtonElement>("btn-mixer");
-  private mixer = byId<HTMLElement>("mixer");
-  private stage = byId<HTMLElement>("stage");
   private tempo = byId<HTMLInputElement>("tempo");
 
   constructor(h: ToolbarHandlers) {
     this.play.addEventListener("click", h.onPlayPause);
     byId("btn-stop").addEventListener("click", h.onStop);
-    this.mixerButton.addEventListener("click", () => {
-      const open = this.mixer.hidden;
-      this.mixer.hidden = !open;
-      this.stage.hidden = open;
-      this.mixerButton.setAttribute("aria-pressed", String(open));
-      h.onToggleMixer(open);
-    });
+    this.mixerButton.addEventListener("click", h.onToggleMixer);
     byId("btn-export").addEventListener("click", h.onExport);
     byId("btn-zoom-in").addEventListener("click", h.onZoomIn);
     byId("btn-zoom-out").addEventListener("click", h.onZoomOut);
@@ -47,6 +39,10 @@ export class Toolbar {
   setTempo(tempo: number): void {
     const value = String(tempo);
     if (this.tempo.value !== value) this.tempo.value = value;
+  }
+
+  setMixerOpen(open: boolean): void {
+    this.mixerButton.setAttribute("aria-pressed", String(open));
   }
 
   setTime(sec: number): void {

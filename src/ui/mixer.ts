@@ -1,5 +1,4 @@
-import type { Project } from "../core/project";
-import type { Id } from "../core/types";
+import type { ChannelCount, Id } from "../core/types";
 
 const INSERT_SLOTS = 10;
 const METER_SEGMENT = 3;
@@ -83,6 +82,25 @@ interface Strip {
   peak: number;
 }
 
+export interface MixerTrack {
+  id: Id;
+  name: string;
+  channels: ChannelCount;
+  volume: number;
+  muted: boolean;
+  solo: boolean;
+}
+
+export interface MixerProject {
+  readonly changed: { subscribe(fn: () => void): () => void };
+  getTracks(): readonly MixerTrack[];
+  setVolume(trackId: Id, volume: number): void;
+  setMuted(trackId: Id, muted: boolean): void;
+  setSolo(trackId: Id, solo: boolean): void;
+  beginBatch(): void;
+  endBatch(): void;
+}
+
 export class Mixer {
   private strips = new Map<Id, Strip>();
   private trackOrder = "";
@@ -92,7 +110,7 @@ export class Mixer {
 
   constructor(
     private root: HTMLElement,
-    private project: Project,
+    private project: MixerProject,
     private getTrackLevels: () => ReadonlyMap<Id, number>,
   ) {
     this.project.changed.subscribe(() => this.refresh());

@@ -19,12 +19,43 @@ export interface SaveProjectRequest {
   existing?: ProjectLocation;
 }
 
+export interface MixerTrackState {
+  id: string;
+  name: string;
+  channels: 1 | 2;
+  volume: number;
+  muted: boolean;
+  solo: boolean;
+}
+
+export interface MixerState {
+  tracks: MixerTrackState[];
+  levels: Record<string, number>;
+}
+
+export type MixerAction =
+  | { type: "set-volume"; trackId: string; volume: number }
+  | { type: "set-muted"; trackId: string; muted: boolean }
+  | { type: "set-solo"; trackId: string; solo: boolean }
+  | { type: "begin-batch" }
+  | { type: "end-batch" };
+
 /**
  * Everything the app needs from the host (desktop shell, browser, Tauri, ...).
  * Keep this tiny. Add methods here, implement them per host.
  */
 export interface Platform {
   readonly name: string;
+  readonly supportsMixerWindow: boolean;
+  /** Toggles the mixer window (or inline mixer in hosts without detached windows). */
+  toggleMixerWindow(): Promise<boolean>;
+  updateMixerState(state: MixerState): void;
+  onMixerAction(handler: (action: MixerAction) => void): void;
+  onMixerState(handler: (state: MixerState) => void): void;
+  onMixerReady(handler: () => void): void;
+  onMixerWindowClosed(handler: () => void): void;
+  sendMixerAction(action: MixerAction): void;
+  notifyMixerReady(): void;
   /** Returns true if saved, false if cancelled. */
   saveFile(suggestedName: string, data: ArrayBuffer): Promise<boolean>;
   /**

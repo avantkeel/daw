@@ -9,20 +9,28 @@ import type {
 import {
   IPC_CLOSE_REQUESTED,
   IPC_COPY_TO_PROJECT,
+  IPC_MIXER_ACTION,
+  IPC_MIXER_READY,
+  IPC_MIXER_STATE,
+  IPC_MIXER_WINDOW_CLOSED,
+  IPC_MIXER_WINDOW_READY,
   IPC_OPEN_PROJECT,
   IPC_QUIT,
   IPC_READ_FILE,
   IPC_SAVE_FILE,
   IPC_SAVE_PROJECT,
   IPC_SET_DIRTY,
+  IPC_TOGGLE_MIXER,
 } from "./ipc-channels";
 
 // Unsaved changes: closing the window is handed to the renderer, which asks the user and then calls quit.
 let dirty = false;
 let forceClose = false;
+let mainWindow: BrowserWindow | undefined;
+let mixerWindow: BrowserWindow | undefined;
 
 function createWindow(): void {
-  const win = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1200,
     height: 700,
     backgroundColor: "#1e1e1e",
@@ -35,13 +43,76 @@ function createWindow(): void {
       sandbox: true,
     },
   });
-  win.on("close", (event) => {
+  mainWindow.on("close", (event) => {
     if (forceClose || !dirty) return;
     event.preventDefault();
-    win.webContents.send(IPC_CLOSE_REQUESTED);
+    mainWindow?.webContents.send(IPC_CLOSE_REQUESTED);
   });
-  void win.loadFile(path.join(__dirname, "index.html"));
+  void mainWindow.loadFile(path.join(__dirname, "index.html"));
 }
+
+function toggleMixerWindow(): boolean {
+  if (mixerWindow && !mixerWindow.isDestroyed()) {
+    mixerWindow.close();
+    return false;
+  }
+  if (!mainWindow || mainWindow.isDestroyed()) return false;
+
+  const win = new BrowserWindow({
+    parent: mainWindow,
+    width: 420,
+    height: 420,
+    useContentSize: true,
+    minWidth: 220,
+    maxWidth: 10000,
+    minHeight: 420,
+    maxHeight: 420,
+    resizable: true,
+    maximizable: false,
+    backgroundColor: "#55575a",
+    title: "Mixer - DAW",
+    autoHideMenuBar: true,
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+  mixerWindow = win;
+  win.on("closed", () => {
+    if (mixerWindow === win) mixerWindow = undefined;
+    if (mainWindow && !mainWindow.isDestroyed())
+      mainWindow.webContents.send(IPC_MIXER_WINDOW_CLOSED);
+  });
+  win.webContents.on("did-finish-load", () => {
+    if (mainWindow && !mainWindow.isDestroyed())
+      mainWindow.webContents.send(IPC_MIXER_WINDOW_READY);
+  });
+  void win.loadFile(path.join(__dirname, "mixer.html"));
+  return true;
+}
+
+ipcMain.handle(IPC_TOGGLE_MIXER, () => toggleMixerWindow());
+
+ipcMain.on(IPC_MIXER_STATE, (event, state) => {
+  if (event.sender === mainWindow?.webContents)
+    mixerWindow?.webContents.send(IPC_MIXER_STATE, state);
+});
+
+ipcMain.on(IPC_MIXER_ACTION, (event, action) => {
+  if (event.sender === mixerWindow?.webContents)
+    mainWindow?.webContents.send(IPC_MIXER_ACTION, action);
+});
+
+ipcMain.on(IPC_MIXER_READY, (event) => {
+  if (
+    event.sender === mixerWindow?.webContents &&
+    mainWindow &&
+    !mainWindow.isDestroyed()
+  )
+    mainWindow.webContents.send(IPC_MIXER_WINDOW_READY);
+});
 
 ipcMain.handle(
   IPC_SAVE_FILE,

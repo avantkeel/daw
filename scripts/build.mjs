@@ -1,6 +1,5 @@
-// Bundles the three Electron entry points + copies static files into dist/.
-// Only src/platform/electron/* and src/renderer.ts are entry points,
-// so removing Electron later = delete the first two builds below.
+// Bundles Electron main/preload and both renderer entry points, then copies static files into dist/.
+// Removing Electron later = delete the first two builds below.
 import { build } from "esbuild";
 import { cp, mkdir, rm } from "node:fs/promises";
 
@@ -38,7 +37,16 @@ await Promise.all([
     format: "iife",
     target: "chrome120",
   }),
+  build({
+    ...common,
+    entryPoints: ["src/mixer-renderer.ts"],
+    outfile: "dist/mixer-renderer.js",
+    platform: "browser",
+    format: "iife",
+    target: "chrome120",
+  }),
 ]);
 
 await cp("src/ui/index.html", "dist/index.html");
+await cp("src/ui/mixer.html", "dist/mixer.html");
 await cp("src/ui/styles.css", "dist/styles.css");

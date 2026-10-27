@@ -12,15 +12,15 @@ import { showContextMenu } from "./ui/contextmenu";
 import { Toolbar } from "./ui/toolbar";
 import { Mixer } from "./ui/mixer";
 import { createPlatform } from "./platform-factory";
+import type { MixerAction } from "./platform/platform";
 import { ProjectFiles } from "./project-files";
 
 export function bootstrap(): void {
   const project = new Project();
   const engine = new AudioEngine(project);
   const platform = createPlatform();
-  const mixer = new Mixer(byId("mixer"), project, () =>
-    engine.getTrackLevels(),
-  );
+  if (!platform.supportsMixerWindow)
+    new Mixer(byId("mixer"), project, () => engine.getTrackLevels());
 
   const togglePlay = () =>
     engine.playing ? engine.pause() : void engine.play();
@@ -28,7 +28,14 @@ export function bootstrap(): void {
   const toolbar = new Toolbar({
     onPlayPause: togglePlay,
     onStop: () => engine.stop(),
-    onToggleMixer: () => mixer.refresh(),
+    onToggleMixer: () => {
+      void platform
+        .toggleMixerWindow()
+        .then((open) => toolbar.setMixerOpen(open))
+        .catch((err) =>
+          toolbar.setStatus(`Could not open mixer: ${(err as Error).message}`),
+        );
+    },
     onZoomIn: () => timeline.zoomBy(1.4),
     onZoomOut: () => timeline.zoomBy(1 / 1.4),
     onTempoChange: (tempo) => {
@@ -67,6 +74,54 @@ export function bootstrap(): void {
   );
   project.changed.subscribe(() => toolbar.setTempo(project.getTempo()));
   toolbar.setTempo(project.getTempo());
+
+  const publishMixerState = () =>
+    platform.updateMixerState({
+      tracks: project.getTracks().map((track) => ({
+        id: track.id,
+        name: track.name,
+        channels: track.channels,
+        volume: track.volume,
+        muted: track.muted,
+        solo: track.solo,
+      })),
+      levels: Object.fromEntries(engine.getTrackLevels()),
+    });
+  const applyMixerAction = (action: MixerAction) => {
+    switch (action.type) {
+      case "set-volume":
+        project.setVolume(action.trackId, action.volume);
+        break;
+      case "set-muted":
+        project.setMuted(action.trackId, action.muted);
+        break;
+      case "set-solo":
+        project.setSolo(action.trackId, action.solo);
+        break;
+      case "begin-batch":
+        project.beginBatch();
+        mixerBatchOpen = true;
+        break;
+      case "end-batch":
+        project.endBatch();
+        mixerBatchOpen = false;
+        break;
+    }
+  };
+  let mixerBatchOpen = false;
+  if (platform.supportsMixerWindow) {
+    platform.onMixerAction(applyMixerAction);
+    platform.onMixerReady(publishMixerState);
+    platform.onMixerWindowClosed(() => {
+      if (mixerBatchOpen) {
+        project.endBatch();
+        mixerBatchOpen = false;
+      }
+      toolbar.setMixerOpen(false);
+    });
+    project.changed.subscribe(publishMixerState);
+    window.setInterval(publishMixerState, 50);
+  }
 
   // Loaded before ProjectFiles exists, so the starting template doesn't count as an unsaved change.
   project.load(defaultTemplate(), []);
