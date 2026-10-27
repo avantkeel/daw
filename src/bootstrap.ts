@@ -85,6 +85,12 @@ export function bootstrap(): void {
     toolbar.setStatus(project.undo() ? "Undo" : "Nothing to undo");
   const redo = () =>
     toolbar.setStatus(project.redo() ? "Redo" : "Nothing to redo");
+  const splitSelectedClip = () =>
+    toolbar.setStatus(
+      timeline.splitSelectedClipAtPlayhead()
+        ? "Split selected clip at playhead"
+        : "Select a clip and place the playhead inside it to split",
+    );
   const newTrack = (channels: 1 | 2) => {
     const track = project.addTrack(undefined, channels);
     toolbar.setStatus(
@@ -154,6 +160,11 @@ export function bootstrap(): void {
       items: [
         { label: "Undo", shortcut: `${mod}Z`, onSelect: undo },
         { label: "Redo", shortcut: `${mod}Y`, onSelect: redo },
+        {
+          label: "Split Clip at Playhead",
+          shortcut: `${mod}E`,
+          onSelect: splitSelectedClip,
+        },
       ],
     },
     {
@@ -274,13 +285,8 @@ export function bootstrap(): void {
       else if (key === "q") void files.exit();
       else if (key === "z" && !e.shiftKey) undo();
       else if (key === "y") redo();
-      else if (key === "e") {
-        toolbar.setStatus(
-          timeline.splitSelectedClipAtPlayhead()
-            ? "Split selected clip at playhead"
-            : "Select a clip and place the playhead inside it to split",
-        );
-      } else return;
+      else if (key === "e") splitSelectedClip();
+      else return;
       e.preventDefault();
       return;
     }
