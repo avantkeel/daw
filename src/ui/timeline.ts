@@ -269,9 +269,11 @@ export class Timeline {
     }
     const h = this.hit(x, y);
     this.canvas.style.cursor =
-      h?.mode === "move" || h?.mode === "fadeIn" || h?.mode === "fadeOut"
-        ? "grab"
-        : "text";
+      h?.mode === "trimStart" || h?.mode === "trimEnd"
+        ? "ew-resize"
+        : h?.mode === "move" || h?.mode === "fadeIn" || h?.mode === "fadeOut"
+          ? "grab"
+          : "text";
   }
 
   private onDown(e: MouseEvent): void {
